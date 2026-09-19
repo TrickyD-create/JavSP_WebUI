@@ -2,7 +2,7 @@
 
 基于 [Yuukiy/JavSP](https://github.com/Yuukiy/JavSP) 扩展的媒体元数据刮削与整理工具，提供 Web 界面、命令行和 Docker 部署。汇总多个站点的信息，生成 NFO、封面及剧照，方便在 Kodi、Jellyfin 等媒体库中使用。
 
-[Docker 镜像](https://hub.docker.com/r/madenginner/javsp) · [详细使用说明](web_ui/guide.html) · [API 文档](Web%20API%20Usage.md)
+[Docker 镜像](https://hub.docker.com/r/madenginner/javsp) · [详细使用说明](guide.md) · [API 文档](Web%20API%20Usage.md)
 
 ## 主要特性
 
@@ -60,7 +60,8 @@ curl -X POST http://localhost:5000/api/trigger-scrape \
 
 ## 详细指南
 
-- **完整使用说明**：启动后点击页面中的「📖 使用说明」，或访问 <http://localhost:5000/guide>，查看配置、API 和典型场景。
+- **完整使用说明**：[guide.md](guide.md)，可直接在 GitHub 阅读配置、API 和典型场景。
+- **程序内指南**：启动后点击页面中的「📖 使用说明」，或访问 <http://localhost:5000/guide>。
 - **离线 HTML 指南**：[web_ui/guide.html](web_ui/guide.html)，下载后用浏览器打开。GitHub 文件页显示的是 HTML 源码。
 - **配置参数**：[Config Usage.md](Config%20Usage.md)。
 - **接口参考**：[Web API Usage.md](Web%20API%20Usage.md)。
