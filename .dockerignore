@@ -1,0 +1,54 @@
+**/__pycache__/
+.github/
+.idea/
+.vscode/
+.devcontainer/
+**/*.log
+.git
+.gitignore
+*.pyc
+*.pyo
+*.pyd
+.db
+.venv
+.vscode
+.idea
+build/
+dist/
+*.log
+
+# macOS
+.DS_Store
+
+# Local runtime config (generated from config.example.yml at startup)
+config.yml
+.envrc
+
+# Tests
+tests/
+.pytest_cache/
+
+# Dev docs & instructions
+AGENTS.md
+Web API Usage.md
+Config Usage.md
+
+# Build artifacts
+build_log.txt
+
+# IDE / editor
+.trae/
+
+# Packaging (not needed in container)
+setup.py
+
+# Exclude nested machine metadata and runtime databases
+**/.DS_Store
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite3
+.env
+.env.*
+.codex/
+.agents/

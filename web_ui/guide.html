@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavSP 使用说明</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface2: #273549;
+            --border: #334155;
+            --text: #e2e8f0;
+            --text2: #94a3b8;
+            --accent: #3b82f6;
+            --accent2: #60a5fa;
+            --green: #22c55e;
+            --orange: #f59e0b;
+            --red: #ef4444;
+            --purple: #a78bfa;
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+
+        /* ─── Sidebar ─── */
+        nav {
+            width: 260px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        nav .logo {
+            padding: 0 20px 16px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent2);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        nav a {
+            display: block;
+            padding: 6px 20px;
+            color: var(--text2);
+            text-decoration: none;
+            font-size: 13px;
+            transition: .15s;
+            border-left: 3px solid transparent;
+        }
+        nav a:hover, nav a.active {
+            color: var(--accent2);
+            background: var(--surface2);
+            border-left-color: var(--accent);
+        }
+        nav .section-title {
+            padding: 16px 20px 6px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text2);
+            opacity: .6;
+        }
+
+        /* ─── Main Content ─── */
+        main {
+            margin-left: 260px;
+            padding: 40px 48px;
+            max-width: 960px;
+            width: 100%;
+        }
+
+        h1 { font-size: 28px; margin-bottom: 8px; }
+        h2 { font-size: 22px; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+        h3 { font-size: 17px; margin: 28px 0 10px; color: var(--accent2); }
+        h4 { font-size: 15px; margin: 20px 0 8px; color: var(--text2); }
+        p { margin: 10px 0; font-size: 14px; color: var(--text2); }
+
+        /* ─── Tables ─── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: var(--surface2);
+            color: var(--text);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        td {
+            color: var(--text2);
+            vertical-align: top;
+        }
+        td code { font-size: 12px; }
+        tr:hover td { background: var(--surface2); }
+
+        /* ─── Code Blocks ─── */
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 18px;
+            overflow-x: auto;
+            margin: 10px 0 18px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        code {
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            color: var(--text);
+        }
+        p code, li code, td code {
+            background: var(--surface2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        /* Syntax highlights */
+        .k { color: var(--purple); }
+        .s { color: var(--green); }
+        .c { color: #64748b; font-style: italic; }
+        .n { color: var(--orange); }
+        .u { color: var(--accent2); }
+
+        /* ─── Badges ─── */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-post { background: #1e3a5f; color: var(--accent2); }
+        .badge-get  { background: #14532d; color: var(--green); }
+        .badge-put  { background: #4a3f0a; color: var(--orange); }
+        .badge-del  { background: #5f1318; color: var(--red); }
+
+        /* ─── Cards ─── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin: 16px 0;
+        }
+        .card h4 { margin-top: 0; }
+
+        /* ─── Info / Warning ─── */
+        .info {
+            background: #1e3a5f;
+            border-left: 4px solid var(--accent);
+            padding: 12px 16px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin: 14px 0;
+            font-size: 13px;
+            color: var(--accent2);
+        }
+        .warn {
+            background: #4a3f0a;
+            border-left: 4px solid var(--orange);
+            padding: 12px 16px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            margin: 14px 0;
+            font-size: 13px;
+            color: var(--orange);
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            nav { display: none; }
+            main { margin-left: 0; padding: 20px; }
+        }
+
+        /* ─── Endpoint header ─── */
+        .ep {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0 6px;
+        }
+        .ep h3 { margin: 0; }
+        .ep .method { margin-right: 8px; }
+    </style>
+</head>
+<body>
+
+<nav id="sidebar">
+    <div class="logo">📖 JavSP 使用说明</div>
+    <div class="section-title">配置参数</div>
+    <a href="#config-scanner">scanner 扫描</a>
+    <a href="#config-network">network 网络</a>
+    <a href="#config-crawler">crawler 爬虫</a>
+    <a href="#config-summarizer">summarizer 整理</a>
+    <a href="#config-translator">translator 翻译</a>
+    <a href="#config-daemon">daemon 后台</a>
+    <a href="#config-retry">retry_policy 重试</a>
+    <a href="#config-metadata">metadata_complete</a>
+    <a href="#config-notifications">notifications</a>
+    <a href="#config-env">环境变量 / CLI</a>
+    <div class="section-title">Web API</div>
+    <a href="#api-control">任务控制</a>
+    <a href="#api-tasks">任务管理</a>
+    <a href="#api-runs">运行记录</a>
+    <a href="#api-metadata">元数据管理</a>
+    <a href="#api-config">配置 API</a>
+    <a href="#api-crawlers">爬虫 API</a>
+    <a href="#api-cover">封面与详情</a>
+    <a href="#api-status">实时状态 / SSE</a>
+    <div class="section-title">典型场景</div>
+    <a href="#scenarios">使用场景</a>
+</nav>
+
+<main>
+<h1>📖 JavSP 使用说明</h1>
+<p>JavSP 是一个多站点 AV 元数据刮削器。本文档涵盖 <strong>config.yml 配置参数</strong> 和 <strong>Web API 接口</strong> 的完整参考。</p>
+
+<!-- ═══════════════ CONFIG ═══════════════ -->
+<h2 id="config-scanner">🔍 scanner — 扫描配置</h2>
+<p>控制影片文件的扫描范围和行为。</p>
+<table>
+<tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+<tr><td><code>input_directory</code></td><td>路径</td><td>无</td><td>扫描根目录。Docker 中通常为 <code>/video</code></td></tr>
+<tr><td><code>filename_extensions</code></td><td>string[]</td><td><code>[.mp4, .mkv, ...]</code></td><td>视为影片的文件后缀</td></tr>
+<tr><td><code>ignored_id_pattern</code></td><td>string[]</td><td>见示例</td><td>推测番号前忽略的正则（分辨率、水印等）</td></tr>
+<tr><td><code>ignored_folder_name_pattern</code></td><td>string[]</td><td><code>[^\.，^#recycle$，...]</code></td><td>忽略的目录名正则</td></tr>
+<tr><td><code>minimum_size</code></td><td>ByteSize</td><td><code>100MiB</code></td><td>最小文件体积，支持 <code>MiB</code>/<code>GiB</code>/<code>MB</code></td></tr>
+<tr><td><code>skip_nfo_dir</code></td><td>bool</td><td>yes</td><td>跳过已有 NFO 的目录</td></tr>
+<tr><td><code>manual</code></td><td>bool</td><td>no</td><td>交互模式（Web UI 强制为 false）</td></tr>
+</table>
+<div class="info">环境变量覆盖：<code>JAVSP_SCANNER__INPUT_DIRECTORY=/mnt/media</code></div>
+
+<h2 id="config-network">🌐 network — 网络配置</h2>
+<table>
+<tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+<tr><td><code>proxy_server</code></td><td>URL / null</td><td><code>null</code></td><td>代理地址，<code>http://</code> / <code>socks5://</code> / <code>socks5h://</code></td></tr>
+<tr><td><code>retry</code></td><td>int</td><td><code>3</code></td><td>网络失败重试次数</td></tr>
+<tr><td><code>timeout</code></td><td>Duration</td><td><code>PT10S</code></td><td>请求超时（ISO 8601 Duration 格式）</td></tr>
+<tr><td><code>javdb_cookie</code></td><td>string / null</td><td><code>null</code></td><td>JavDB 登录 Cookie</td></tr>
+</table>
+<pre><code><span class="c"># 示例</span>
+<span class="n">network:</span>
+<span class="n">  proxy_server:</span> <span class="s">'socks5h://127.0.0.1:1080'</span>
+<span class="n">  retry:</span> <span class="u">5</span>
+<span class="n">  timeout:</span> <span class="s">PT30S</span></code></pre>
+
+<h2 id="config-crawler">🕷️ crawler — 爬虫配置</h2>
+<p>按影片类型配置爬虫优先级。<strong>列表前面的优先</strong>。</p>
+<h4>selection</h4>
+<table>
+<tr><th>子字段</th><th>适用场景</th></tr>
+<tr><td><code>normal</code></td><td>普通 DVD 番号（<code>ABC-123</code>）</td></tr>
+<tr><td><code>fc2</code></td><td>FC2 番号（<code>FC2-12345</code>）</td></tr>
+<tr><td><code>cid</code></td><td>DMM Content ID</td></tr>
+</table>
+
+<p>可用爬虫：<code>airav</code> <code>avsox</code> <code>avwiki</code> <code>fanza</code> <code>fc2</code> <code>fc2fan</code> <code>fc2cmadb</code> <code>javbus</code> <code>javdb</code> <code>javlib</code> <code>javmenu</code> <code>jav321</code> <code>mgstage</code> <code>prestige</code> <code>arzon</code> <code>arzon_iv</code> <code>javrate</code> <code>javguru</code> <code>njav</code> <code>supjav</code> <code>ggjav</code></p>
+
+<h4>field_priorities</h4>
+<p>控制标题/剧情/女优/剧照四个字段优先从哪个爬虫取值。不设置则回退到 selection 顺序。</p>
+
+<table>
+<tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+<tr><td><code>hardworking</code></td><td>bool</td><td><code>true</code></td><td>额外翻页查询更多信息</td></tr>
+<tr><td><code>respect_site_avid</code></td><td>bool</td><td><code>true</code></td><td>以网站番号为准</td></tr>
+<tr><td><code>sleep_after_scraping</code></td><td>Duration</td><td><code>PT1S</code></td><td>每部影片后等待间隔</td></tr>
+<tr><td><code>use_javdb_cover</code></td><td>enum</td><td><code>fallback</code></td><td><code>yes</code> / <code>no</code> / <code>fallback</code></td></tr>
+<tr><td><code>normalize_actress_name</code></td><td>bool</td><td><code>true</code></td><td>统一女优艺名</td></tr>
+<tr><td><code>required_keys</code></td><td>string[]</td><td><code>[cover,title,actress]</code></td><td>最少需获取的字段</td></tr>
+</table>
+
+<h2 id="config-summarizer">📂 summarizer — 整理/命名配置</h2>
+<h4>模板变量</h4>
+<table>
+<tr><th>变量</th><th>说明</th><th>示例值</th></tr>
+<tr><td><code>{num}</code></td><td>番号</td><td><code>ABC-123</code></td></tr>
+<tr><td><code>{title}</code></td><td>标题</td><td><code>美丽出道</code></td></tr>
+<tr><td><code>{rawtitle}</code></td><td>原始标题（未处理）</td><td><code>美丽出道</code></td></tr>
+<tr><td><code>{actress}</code></td><td>女优名，逗号分隔</td><td><code>女优A，女优B</code></td></tr>
+<tr><td><code>{score}</code></td><td>评分</td><td><code>8.5</code></td></tr>
+<tr><td><code>{censor}</code></td><td>有码/无码</td><td><code>有码</code></td></tr>
+<tr><td><code>{serial}</code></td><td>系列</td><td><code>超级系列</code></td></tr>
+<tr><td><code>{director}</code></td><td>导演</td><td><code>某导演</code></td></tr>
+<tr><td><code>{producer}</code></td><td>制作商</td><td><code>某制作商</code></td></tr>
+<tr><td><code>{publisher}</code></td><td>发行商</td><td><code>某发行商</code></td></tr>
+<tr><td><code>{date}</code></td><td>发行日期</td><td><code>2024-01-15</code></td></tr>
+<tr><td><code>{year}</code></td><td>发行年份</td><td><code>2024</code></td></tr>
+<tr><td><code>{label}</code></td><td>番号前缀</td><td><code>ABC</code></td></tr>
+<tr><td><code>{genre}</code></td><td>分类，逗号分隔</td><td><code>Drama，Romance</code></td></tr>
+</table>
+
+<h4>核心字段</h4>
+<table>
+<tr><th>字段</th><th>说明</th></tr>
+<tr><td><code>move_files</code></td><td><code>true</code> 移动文件到新目录；<code>false</code> 在原目录生成 NFO</td></tr>
+<tr><td><code>path.output_folder_pattern</code></td><td>输出目录模板，默认 <code>JAV/{actress}/[{num}] {title}</code></td></tr>
+<tr><td><code>path.basename_pattern</code></td><td>文件名，默认 <code>{num}</code></td></tr>
+<tr><td><code>path.length_maximum</code></td><td>路径最大长度，超长截短标题</td></tr>
+<tr><td><code>path.hard_link</code></td><td>硬链接（节省空间，需文件系统支持）</td></tr>
+<tr><td><code>nfo.title_pattern</code></td><td>NFO 显示标题，默认 <code>{num} {title}</code></td></tr>
+<tr><td><code>cover.highres</code></td><td>是否下载高清封面</td></tr>
+<tr><td><code>extra_fanarts.enabled</code></td><td>是否下载剧照</td></tr>
+</table>
+
+<h2 id="config-translator">🌏 translator — 翻译配置</h2>
+<table>
+<tr><th>引擎</th><th>name</th><th>需要参数</th></tr>
+<tr><td>Google（免费）</td><td><code>google</code></td><td>无</td></tr>
+<tr><td>百度</td><td><code>baidu</code></td><td><code>app_id</code>、<code>api_key</code></td></tr>
+<tr><td>必应 (Azure)</td><td><code>bing</code></td><td><code>api_key</code></td></tr>
+<tr><td>Claude</td><td><code>claude</code></td><td><code>api_key</code></td></tr>
+<tr><td>OpenAI / Groq</td><td><code>openai</code></td><td><code>url</code>、<code>api_key</code>、<code>model</code></td></tr>
+<tr><td>禁用</td><td><code>null</code></td><td>—</td></tr>
+</table>
+<pre><code><span class="c"># Google 免费翻译</span>
+<span class="n">translator:</span>
+<span class="n">  engine:</span>
+<span class="n">    name:</span> <span class="s">google</span>
+<span class="n">  fields:</span>
+<span class="n">    title:</span> <span class="s">true</span>
+<span class="n">    plot:</span> <span class="s">true</span></code></pre>
+
+<h2 id="config-daemon">⚙️ daemon — 后台任务配置</h2>
+<table>
+<tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+<tr><td><code>enabled</code></td><td>bool</td><td><code>false</code></td><td>是否启用常驻后台</td></tr>
+<tr><td><code>state_db</code></td><td>路径</td><td><code>data/javsp_state.db</code></td><td>SQLite 状态库。Docker 中建议 <code>/video/.javsp_state.db</code></td></tr>
+<tr><td><code>scan_interval</code></td><td>Duration</td><td><code>PT30M</code></td><td>扫描间隔</td></tr>
+<tr><td><code>max_movies_per_run</code></td><td>int</td><td><code>0</code></td><td>每轮最多处理数，0 不限制</td></tr>
+<tr><td><code>worker_interval</code></td><td>Duration</td><td><code>PT30S</code></td><td>Worker 空闲轮询间隔</td></tr>
+<tr><td><code>download_stable_seconds</code></td><td>int</td><td><code>300</code></td><td>文件稳定等待时间。临时文件过期阈值为此值 ×2（默认 600s）</td></tr>
+</table>
+<div class="warn">Docker 部署时 <code>state_db</code> 建议放 <code>/video/</code>，重建容器后不丢失状态。</div>
+
+<h2 id="config-retry">🔄 retry_policy — 重试策略</h2>
+<table>
+<tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+<tr><td><code>network_retry_after</code></td><td>Duration</td><td><code>PT1H</code></td><td>网络失败后重试间隔</td></tr>
+<tr><td><code>metadata_retry_after</code></td><td>Duration</td><td><code>P1D</code></td><td>元数据不完整后重试间隔</td></tr>
+<tr><td><code>max_retry_count</code></td><td>int</td><td><code>3</code></td><td>单任务最多重试次数</td></tr>
+<tr><td><code>crawler_circuit_break_threshold</code></td><td>int</td><td><code>5</code></td><td>爬虫连续失败 N 次触发熔断</td></tr>
+<tr><td><code>crawler_circuit_break_duration</code></td><td>Duration</td><td><code>PT6H</code></td><td>熔断持续时长</td></tr>
+</table>
+
+<h2 id="config-metadata">✅ metadata_complete — 元数据完整性</h2>
+<p>判断成功任务是否需要后续优化刷新，<strong>不影响刮削成功线</strong>。</p>
+<table>
+<tr><th>字段</th><th>配置项</th><th>说明</th></tr>
+<tr><td><code>title</code></td><td><code>required: true</code></td><td>prefer_language: zh，min_cjk_ratio: 0.3</td></tr>
+<tr><td><code>plot</code></td><td><code>required: true</code></td><td>prefer_language: zh，min_cjk_ratio: 0.5，min_length: 20</td></tr>
+<tr><td><code>score</code></td><td><code>required: false</code></td><td>—</td></tr>
+<tr><td><code>genre</code></td><td><code>required: false</code></td><td>min_items: 2</td></tr>
+<tr><td><code>preview_pics</code></td><td><code>required: false</code></td><td>min_items: 3</td></tr>
+<tr><td><code>actress_pics</code></td><td><code>required: false</code></td><td>min_items: 1</td></tr>
+<tr><td><code>director</code></td><td><code>required: false</code></td><td>—</td></tr>
+<tr><td><code>duration</code></td><td><code>required: false</code></td><td>—</td></tr>
+<tr><td><code>producer</code></td><td><code>required: false</code></td><td>—</td></tr>
+<tr><td><code>publisher</code></td><td><code>required: false</code></td><td>—</td></tr>
+<tr><td><code>publish_date</code></td><td><code>required: false</code></td><td>—</td></tr>
+</table>
+
+<h2 id="config-notifications">🔔 notifications — 通知</h2>
+<table>
+<tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+<tr><td><code>enabled</code></td><td>bool</td><td><code>false</code></td><td>是否启用</td></tr>
+<tr><td><code>webhook_url</code></td><td>URL / null</td><td><code>null</code></td><td>Webhook 地址</td></tr>
+<tr><td><code>notify_on_success</code></td><td>bool</td><td><code>true</code></td><td>成功时是否通知</td></tr>
+<tr><td><code>notify_on_failure</code></td><td>bool</td><td><code>true</code></td><td>失败时是否通知</td></tr>
+</table>
+
+<h2 id="config-env">🔧 环境变量 & CLI 覆盖</h2>
+<pre><code><span class="c"># 环境变量（前缀 JAVSP_，双下划线分隔层级）</span>
+JAVSP_SCANNER__INPUT_DIRECTORY=/mnt/media
+JAVSP_DAEMON__DOWNLOAD_STABLE_SECONDS=600
+
+<span class="c"># CLI 覆盖</span>
+python -m javsp run-once -c config.yml \
+    -o scanner.input_directory=/mnt \
+    -o daemon.max_movies_per_run=10</code></pre>
+
+<!-- ═══════════════ API ═══════════════ -->
+<h2 id="api-control">🚀 任务控制 API</h2>
+
+<div class="card">
+<h4>POST /api/run-now</h4>
+<p>启动完整扫描→入队→消费队列。非阻塞，立即返回。</p>
+<p>202：<code>{"message": "已触发手动运行。"}</code> &nbsp;|&nbsp; 409：已在运行中</p>
+</div>
+
+<div class="card">
+<h4>POST /api/trigger-scrape &nbsp; <span class="badge badge-post">POST</span></h4>
+<p>下载软件 Webhook 调用。支持 JSON / form / query 三种传参。</p>
+<table>
+<tr><th>参数</th><th>类型</th><th>说明</th></tr>
+<tr><td><code>target_dir</code></td><td>string</td><td>目标目录（不传用默认）</td></tr>
+<tr><td><code>target_file</code></td><td>string</td><td>仅刮削指定文件（不传扫描整个目录）</td></tr>
+<tr><td><code>move_files</code></td><td>string</td><td>是否移动文件：<code>"true"</code>/<code>"1"</code>/<code>"yes"</code></td></tr>
+</table>
+<pre><code><span class="c"># JSON 方式（推荐）</span>
+curl -X POST http://localhost:5000/api/trigger-scrape \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"target_file": "/video/MOND-306.mp4", "move_files": "false"}'</span>
+
+<span class="c"># Form 方式</span>
+curl -X POST http://localhost:5000/api/trigger-scrape \
+  -d <span class="s">"target_file=/video/MOND-306.mp4"</span> -d <span class="s">"move_files=false"</span></code></pre>
+</div>
+
+<h2 id="api-tasks">📊 任务管理 API</h2>
+
+<h4>GET /api/tasks</h4>
+<p>分页任务列表。参数：<code>status</code>（逗号分隔）、<code>limit</code>（200）、<code>offset</code>、<code>order_by</code>、<code>sort_dir</code>、<code>include_results</code>、<code>check_metadata</code>。</p>
+<p>任务状态：<code>pending</code> | <code>running</code> | <code>success</code> | <code>failed</code> | <code>skipped</code> | <code>deferred</code></p>
+
+<h4>POST /api/tasks/:id/retry &nbsp; <span class="badge badge-post">POST</span></h4>
+<p>将 failed/deferred 重置为 pending。<strong>重试成功且有 pending 任务时自动启动 Worker。</strong></p>
+<pre><code>curl -X POST http://localhost:5000/api/tasks/734/retry</code></pre>
+
+<h4>其他端点</h4>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/tasks/:id</code></td><td>任务详情（含爬虫结果）</td></tr>
+<tr><td><span class="badge badge-del">DELETE</span></td><td><code>/api/tasks/:id</code></td><td>删除任务记录，不删文件</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/tasks/:id/events</code></td><td>任务事件列表</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/tasks/:id/metadata/sources</code></td><td>元数据来源对比</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tasks/:id/metadata/rescrape</code></td><td>原有自动重新刮削（保持兼容）</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tasks/:id/metadata/rescrape/interactive</code></td><td>启动自由选择候选抓取</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/rescrape-sessions/:id</code></td><td>读取或恢复自由选择会话</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/rescrape-sessions/:id/apply</code></td><td>提交最终字段并开始写入及媒体处理</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/rescrape-sessions/:id/cancel</code></td><td>取消待选择会话，不修改原文件</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tasks/batch-delete</code></td><td>批量删除（按 ID 或状态）</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tasks/batch-retry</code></td><td>批量重试</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/tasks/export</code></td><td>导出 CSV</td></tr>
+</table>
+
+<h2 id="api-runs">📈 运行记录</h2>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/runs/latest</code></td><td>最新运行记录</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/runs/activity</code></td><td>活动运行列表</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/runs/:id</code></td><td>运行详情（含任务/事件）</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/failures</code></td><td>失败任务列表</td></tr>
+</table>
+
+<h2 id="api-metadata">📝 元数据管理 API</h2>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/metadata/check_complete</code></td><td>批量重判完整性</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tasks/:id/metadata/check</code></td><td>单任务重判</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tasks/:id/metadata/refresh</code></td><td>优化刷新单个任务元数据</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/metadata/refresh_incomplete</code></td><td>批量优化不全任务</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/metadata/import_legacy</code></td><td>导入历史目录元数据</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/metadata/normalize_actress</code></td><td>女优名归一化<br><small>参数: <code>path</code>(string,必填) — 目标目录; <code>move</code>(bool,可选) — 是否移动文件</small></td></tr>
+</table>
+
+<h2 id="api-config">⚙️ 配置 API</h2>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td>GET/POST</td><td><code>/api/general_config</code></td><td>读写 <code>config.yml</code> 主配置</td></tr>
+<tr><td>GET/POST</td><td><code>/api/scheduler_config</code></td><td>读写定时任务配置（刮削+优化两套独立调度）</td></tr>
+<tr><td>GET/POST</td><td><code>/api/metadata_complete/config</code></td><td>读写元数据完整性配置</td></tr>
+<tr><td>GET/POST</td><td><code>/api/crawlers</code></td><td>读写爬虫选择/优先级</td></tr>
+</table>
+
+<h2 id="api-crawlers">🕷️ 爬虫 API</h2>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/crawlers_by_type?type=normal</code></td><td>按类型获取爬虫列表</td></tr>
+<tr><td><span class="badge badge-get">GET</span></td><td><code>/api/crawler_health</code></td><td>爬虫健康状态（成功率/熔断）</td></tr>
+<tr><td><span class="badge badge-post">POST</span></td><td><code>/api/crawlers/debug</code></td><td><strong>调试爬虫</strong>：指定爬虫和番号，返回抓取结果</td></tr>
+</table>
+
+<div class="card">
+<h4>POST /api/crawlers/debug</h4>
+<pre><code>curl -X POST http://localhost:5000/api/crawlers/debug \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"crawler_name": "javbus", "dvdid": "IPX-177"}'</span>
+
+<span class="c">// 返回</span>
+{<span class="s">"success"</span>: <span class="s">true</span>, <span class="s">"elapsed"</span>: <span class="u">1.23</span>,
+ <span class="s">"fields"</span>: {<span class="s">"title"</span>: <span class="s">"..."</span>, <span class="s">"actress"</span>: [...], <span class="s">"cover"</span>: <span class="s">"..."</span>}}</code></pre>
+</div>
+
+<h2 id="api-cover">🖼️ 封面与详情</h2>
+
+<h4>GET /api/cover</h4>
+<p>安全封面图片服务。参数：<code>path</code>（图片路径）。</p>
+<p><strong>三重安全校验</strong>：① <code>realpath()</code> 防路径穿越 ② <code>commonpath()</code> 限扫描目录内 ③ 仅放行 <code>.jpg/.jpeg/.png/.webp/.gif</code></p>
+
+<h4>GET /api/movie_detail</h4>
+<p>从 NFO 文件读取影片详情。参数：<code>path</code>（目录）、<code>num</code>（番号）。</p>
+<pre><code><span class="c">// 返回</span>
+{<span class="s">"title"</span>: <span class="s">"美丽出道"</span>, <span class="s">"actress"</span>: [...], <span class="s">"genre"</span>: [...],
+ <span class="s">"poster"</span>: <span class="s">"/api/cover?path=..."</span>, <span class="s">"fanart"</span>: <span class="s">"/api/cover?path=..."</span>}</code></pre>
+
+<h2 id="api-status">📡 实时状态 / SSE</h2>
+<h4>GET /api/polling_active</h4>
+<p>前端轮询，返回 11 个状态字段：<code>active</code>、<code>scraping_active</code>、<code>refresh_active</code>、<code>tasks_pending</code>、<code>tasks_running</code>、<code>incomplete_count</code> 等。</p>
+
+<h4>GET /api/scrape_status</h4>
+<p>返回当前 SSE 刮削的实时状态：<code>total</code>、<code>completed</code>、<code>failed</code>、<code>movies</code>。</p>
+
+<h4>GET /run-app — SSE 实时流</h4>
+<p>EventSource 连接，节点推送：<code>scan_complete</code> → <code>scraping_start</code> → <code>scraping_end</code> → <code>finish</code>。</p>
+
+<!-- ═══════════════ SCENARIOS ═══════════════ -->
+<h2 id="scenarios">🎯 典型使用场景</h2>
+
+<div class="card">
+<h3>1. 下载软件完成单个文件后触发刮削</h3>
+<pre><code><span class="c"># aria2 on-download-complete hook</span>
+curl -X POST http://localhost:5000/api/trigger-scrape \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">"{\"target_file\": \"$3\", \"move_files\": \"false\"}"</span></code></pre>
+</div>
+
+<div class="card">
+<h3>2. 查看 deferred 任务并一键重试</h3>
+<pre><code><span class="c"># 列出 deferred 任务</span>
+curl <span class="s">"http://localhost:5000/api/tasks?status=deferred"</span>
+
+<span class="c"># 重试（会自动启动 Worker）</span>
+curl -X POST http://localhost:5000/api/tasks/734/retry</code></pre>
+</div>
+
+<div class="card">
+<h3>3. 批量清理 7 天前的失败任务</h3>
+<pre><code>curl -X POST http://localhost:5000/api/tasks/batch-delete \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"status": "failed", "older_than_days": 7}'</span></code></pre>
+</div>
+
+<div class="card">
+<h3>4. 设置凌晨 2 点定时刮削</h3>
+<pre><code>curl -X POST http://localhost:5000/api/scheduler_config \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"content": "scheduler:\n  enabled: true\n  mode: cron\n  cron:\n    time: \"02:00\""}'</span></code></pre>
+<p style="color:var(--text2);font-size:13px">interval 模式：<code>mode: interval</code>，时间参数为 <code>hours</code> / <code>minutes</code> / <code>seconds</code> / <code>days</code></p>
+</div>
+
+<div class="card">
+<h3>5. 设置每 24 小时定时优化</h3>
+<pre><code>curl -X POST http://localhost:5000/api/scheduler_config \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"content": "scheduler:\n  enabled: true\n  mode: interval\n  interval:\n    hours: 6\n\nrefresh_scheduler:\n  enabled: true\n  mode: interval\n  interval:\n    hours: 24"}'</span></code></pre>
+<p style="color:var(--text2);font-size:13px">优化调度器使用 <code>refresh_scheduler</code> 配置节，独立于刮削调度器 <code>scheduler</code>。同一任务在 <code>refresh_after</code>（默认 7 天）内不会重复优化。</p>
+</div>
+
+<div class="card">
+<h3>5. 调试单个爬虫</h3>
+<pre><code>curl -X POST http://localhost:5000/api/crawlers/debug \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"crawler_name": "javbus", "dvdid": "IPX-177"}'</span></code></pre>
+</div>
+
+<div class="card">
+<h3>6. 导出任务列表</h3>
+<pre><code>curl http://localhost:5000/api/tasks/export > javsp_tasks.csv</code></pre>
+</div>
+
+<p style="text-align:center; margin-top:48px; color:var(--text2); font-size:12px;">JavSP — 汇总多站点数据的AV元数据刮削器</p>
+
+</main>
+
+<script>
+// 左侧导航高亮
+const sidebar = document.getElementById('sidebar');
+const links = sidebar.querySelectorAll('a');
+const sections = [...links].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+
+function updateActive() {
+    let current = sections[0];
+    for (const section of sections) {
+        if (section.getBoundingClientRect().top <= 120) current = section;
+    }
+    links.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current.id);
+    });
+}
+window.addEventListener('scroll', updateActive, {passive: true});
+updateActive();
+</script>
+
+</body>
+</html>

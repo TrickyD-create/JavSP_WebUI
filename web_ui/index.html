@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JAVSP 管理面板</title>
+    <script src="/js-yaml.min.js"></script>
+    <link rel="stylesheet" href="/static/css/app.css?v=20260724-task-center-ui-1">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">⚡ JAVSP 管理控制台</div>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('console')">🖥️ 实时控制台</button>
+            <button class="tab-btn" onclick="switchTab('tasks')">📊 任务中心</button>
+            <button class="tab-btn" onclick="switchTab('config')">⚙️ 参数配置</button>
+            <button class="tab-btn" onclick="switchTab('crawlers')">🕷️ 爬虫管理</button>
+            <button class="tab-btn" onclick="switchTab('debug')">🔍 爬虫调试</button>
+            <button class="tab-btn guide-btn" onclick="window.open('/guide')">📖 使用说明</button>
+        </div>
+        <div id="globalStatus" class="status-pill">IDLE</div>
+    </nav>
+
+    <main class="main-content">
+        <!-- 标签页 1：控制台 -->
+        <div id="consolePanel" class="tab-panel active">
+            <div class="console-layout">
+                <div class="action-bar">
+                    <button id="runBtn">🚀 启动 JAVSP 主程序</button>
+                    <div class="run-status">
+                        <div class="run-status-label">当前状态</div>
+                        <div id="statusText" class="run-status-value">准备就绪</div>
+                    </div>
+                </div>
+                <div class="daemon-panel">
+                    <div class="daemon-card">
+                        <strong>最近运行</strong>
+                        <div id="latestRunSummary">尚无记录</div>
+                    </div>
+                    <div class="daemon-card">
+                        <strong>任务队列</strong>
+                        <div id="taskQueueSummary">pending 0 / failed 0 / deferred 0</div>
+                    </div>
+                    <div class="daemon-card">
+                        <strong>失败影片</strong>
+                        <div id="failureSummary">0 个待处理</div>
+                        <button onclick="loadTaskDashboard()">刷新</button>
+                    </div>
+                    <div class="daemon-card">
+                        <strong>爬虫健康</strong>
+                        <div id="crawlerHealthSummary">暂无统计</div>
+                    </div>
+                    <div class="daemon-card" id="optimizeCard">
+                        <strong>元数据优化</strong>
+                        <div id="optimizeSummary">暂无数据</div>
+                    </div>
+                </div>
+                <div class="console-new-layout">
+                    <!-- 左侧：影片列表 -->
+                    <div class="movie-list-panel">
+                        <div class="movie-list-header">
+                            <span>📋 影片列表</span>
+                            <div class="movie-list-tools">
+                                <select id="movieListFilter" class="compact-select">
+                                    <option value="latest">最近运行</option>
+                                    <option value="recent10">最近的 10 部影片</option>
+                                    <option value="day1">过去 1 天的影片</option>
+                                    <option value="day7">过去 7 天的影片</option>
+                                    <option value="all">全部</option>
+                                    <option value="success">成功</option>
+                                    <option value="failed">失败</option>
+                                </select>
+                                <span id="movieListCount">0 / 0</span>
+                                <button id="clearMovieListBtn" class="ghost-btn compact-btn" onclick="clearMovieListAndStatus()">🗑️ 清除</button>
+                            </div>
+                        </div>
+                        <div id="movieListContainer" class="movie-list-container">
+                            <div class="movie-detail-empty">点击「启动」开始刮削</div>
+                        </div>
+                    </div>
+                    <!-- 右侧：影片详情 -->
+                    <div class="movie-detail-panel">
+                        <div class="movie-detail-header">🎬 影片详情</div>
+                        <div id="movieDetailContent" class="movie-detail-content">
+                            <div class="movie-detail-empty">点击左侧列表中的影片查看详情</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 标签页 2：任务中心 -->
+        <div id="tasksPanel" class="tab-panel">
+            <div class="task-center-layout">
+                <div class="task-toolbar">
+                    <div class="task-toolbar-copy">
+                        <h2>任务中心</h2>
+                        <p>查看处理进度、维护元数据与历史任务</p>
+                    </div>
+                    <div class="toolbar-actions">
+                        <button onclick="loadTaskCenter()">🔄 刷新</button>
+                        <button onclick="checkMetadataComplete()">✅ 完整性检查</button>
+                        <button class="primary-action" onclick="refreshIncompleteMetadata()">⚡ 优化所有不完整</button>
+                        <button onclick="exportTasksCSV()">📥 导出CSV</button>
+                    </div>
+                </div>
+                <div class="task-grid">
+                    <div class="task-stat task-stat-latest">
+                        <div class="task-stat-label">最近运行</div>
+                        <div class="task-stat-value" id="taskCenterLatestRun">尚无记录</div>
+                    </div>
+                    <div class="task-stat">
+                        <div class="task-stat-label">待处理</div>
+                        <div class="task-stat-value" id="taskCenterPending">0</div>
+                    </div>
+                    <div class="task-stat">
+                        <div class="task-stat-label">失败</div>
+                        <div class="task-stat-value" id="taskCenterFailed">0</div>
+                    </div>
+                    <div class="task-stat">
+                        <div class="task-stat-label">延迟</div>
+                        <div class="task-stat-value" id="taskCenterDeferred">0</div>
+                    </div>
+                    <div class="task-stat">
+                        <div class="task-stat-label">优化运行中</div>
+                        <div class="task-stat-value stat-accent" id="taskCenterRefreshRunning">0</div>
+                    </div>
+                    <div class="task-stat">
+                        <div class="task-stat-label">待优化</div>
+                        <div class="task-stat-value stat-warning" id="taskCenterIncomplete">0</div>
+                    </div>
+                    <div class="task-stat rescrape-awaiting-stat" onclick="showAwaitingRescrapes()" role="button" tabindex="0">
+                        <div class="task-stat-label">待人工选择</div>
+                        <div class="task-stat-value" id="taskCenterAwaitingSelection">0</div>
+                    </div>
+                </div>
+                <div class="task-maintenance-grid" aria-label="维护工具">
+                    <details class="task-maintenance-card">
+                        <summary>
+                            <span class="task-maintenance-icon" aria-hidden="true">🧹</span>
+                            <span class="task-maintenance-heading">
+                                <strong>任务清理</strong>
+                                <small>按状态或时间清理历史记录</small>
+                            </span>
+                            <span class="task-maintenance-chevron" aria-hidden="true">⌄</span>
+                        </summary>
+                        <div class="task-maintenance-content task-clean-actions">
+                            <button class="success-action" onclick="batchDeleteByStatus('success')">清空所有成功</button>
+                            <button class="danger-action" onclick="batchDeleteByStatus('failed')">清空所有失败</button>
+                            <button onclick="batchDeleteByStatus('skipped')">清空所有跳过</button>
+                            <div class="task-days-action">
+                                <input id="cleanDaysInput" type="number" class="form-input days-input" aria-label="保留天数" value="30" min="1">
+                                <button onclick="batchDeleteOldRecords('success', parseInt(document.getElementById('cleanDaysInput').value)||30)">清空 N 天前</button>
+                            </div>
+                        </div>
+                    </details>
+                    <details class="task-maintenance-card">
+                        <summary>
+                            <span class="task-maintenance-icon" aria-hidden="true">📂</span>
+                            <span class="task-maintenance-heading">
+                                <strong>历史目录</strong>
+                                <small id="legacyImportSummary">尚未导入</small>
+                            </span>
+                            <span class="task-maintenance-chevron" aria-hidden="true">⌄</span>
+                        </summary>
+                        <div class="task-maintenance-content">
+                            <input id="legacyImportPath" class="form-input wide-path-input" aria-label="历史目录路径" placeholder="/video/old-library">
+                            <button onclick="importLegacyMetadata()">导入 / 重新读取</button>
+                        </div>
+                    </details>
+                    <details class="task-maintenance-card">
+                        <summary>
+                            <span class="task-maintenance-icon" aria-hidden="true">🪄</span>
+                            <span class="task-maintenance-heading">
+                                <strong>女优名归一化</strong>
+                                <small id="normalizeActressSummary">尚未执行</small>
+                            </span>
+                            <span class="task-maintenance-chevron" aria-hidden="true">⌄</span>
+                        </summary>
+                        <div class="task-maintenance-content">
+                            <label class="task-muted task-checkbox-line"><input type="checkbox" id="normalizeActressMove"> 按当前规则移动</label>
+                            <button id="normalizeActressBtn" onclick="normalizeActressMetadata()">归一化女优名</button>
+                        </div>
+                    </details>
+                </div>
+                <div class="task-control-row task-browser-bar">
+                    <div class="task-section-tabs">
+                        <button class="task-section-tab active" data-task-section="metadata" onclick="switchTaskSection('metadata')">影片元数据</button>
+                        <button class="task-section-tab" data-task-section="queue" onclick="switchTaskSection('queue')">普通队列</button>
+                        <button class="task-section-tab" data-task-section="activity" onclick="switchTaskSection('activity')">运行记录</button>
+                        <button class="task-section-tab" data-task-section="health" onclick="switchTaskSection('health')">爬虫健康</button>
+                    </div>
+                    <div class="task-filter-tools">
+                        <select id="taskFilterMetadata" class="form-select filter-select" aria-label="元数据完整性筛选" onchange="resetTaskPage('metadata'); renderTaskCenter()">
+                            <option value="">全部完整性</option>
+                            <option value="complete">完整</option>
+                            <option value="incomplete">待优化</option>
+                            <option value="path_unknown">路径未知</option>
+                            <option value="not_checked">未检查</option>
+                        </select>
+                        <input id="taskFilterSearch" class="form-input search-input" aria-label="搜索任务" placeholder="搜索番号 / 路径" oninput="resetTaskPage('metadata'); renderTaskCenter()">
+                    </div>
+                </div>
+                <div id="taskSectionMetadata" class="task-section-panel active">
+                    <div class="task-table-wrap">
+                        <div class="task-table-header">
+                            <span>影片元数据中心</span>
+                            <div class="table-actions">
+                                <span class="task-muted" id="metadataTableCount">0 条</span>
+                                <button onclick="batchDeleteSelected('metadata')" id="metaBatchDelBtn" disabled>删除选中</button>
+                                <button onclick="selectAllTasks('metadata')">全选当页</button>
+                                <button onclick="clearAllSelections('metadata')">取消全选</button>
+                            </div>
+                        </div>
+                        <div class="task-table-scroll">
+                            <table class="task-table">
+                                <thead>
+                                    <tr>
+                                        <th class="select-col"><input type="checkbox" id="metaSelectAll" onchange="toggleSelectAll('metadata', this.checked)" title="全选/取消"></th>
+                                        <th class="sortable" onclick="setSort('id')">ID<span class="sort-arrow" data-col="id"></span></th>
+                                        <th class="sortable" onclick="setSort('avid')">番号<span class="sort-arrow" data-col="avid"></span></th>
+                                        <th class="sortable" onclick="setSort('metadata_status')">完整性<span class="sort-arrow" data-col="metadata_status"></span></th>
+                                        <th>来源</th>
+                                        <th>NFO</th>
+                                        <th>目录</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="metadataTableBody">
+                                    <tr><td colspan="8" class="task-muted">暂无影片</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="task-pagination" id="metadataPagination"></div>
+                    </div>
+                </div>
+                <div id="taskSectionQueue" class="task-section-panel">
+                    <div class="task-table-wrap">
+                    <div class="task-table-header">
+                        <span>普通刮削队列</span>
+                        <div class="table-actions">
+                            <span class="task-muted" id="queueTableCount">0 条</span>
+                            <button onclick="batchRetrySelected()" id="queueBatchRetryBtn" disabled>重试选中</button>
+                            <button onclick="batchDeleteSelected('queue')" id="queueBatchDelBtn" disabled>删除选中</button>
+                            <button onclick="selectAllTasks('queue')">全选当页</button>
+                            <button onclick="clearAllSelections('queue')">取消全选</button>
+                        </div>
+                    </div>
+                    <div class="task-table-scroll">
+                        <table class="task-table">
+                            <thead>
+                                <tr>
+                                    <th class="select-col"><input type="checkbox" id="queueSelectAll" onchange="toggleSelectAll('queue', this.checked)" title="全选/取消"></th>
+                                    <th class="sortable" onclick="setSort('id')">ID<span class="sort-arrow" data-col="id"></span></th>
+                                    <th class="sortable" onclick="setSort('avid')">番号<span class="sort-arrow" data-col="avid"></span></th>
+                                    <th class="sortable" onclick="setSort('status')">状态<span class="sort-arrow" data-col="status"></span></th>
+                                    <th>数据源</th>
+                                    <th>失败阶段</th>
+                                    <th>失败原因</th>
+                                    <th>文件</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueTableBody">
+                                <tr><td colspan="9" class="task-muted">暂无任务</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                        <div class="task-pagination" id="queuePagination"></div>
+                    </div>
+                </div>
+                <div id="taskSectionActivity" class="task-section-panel">
+                    <div class="task-table-wrap">
+                        <div class="task-table-header">
+                            <span>运行记录</span>
+                            <span class="task-muted" id="activityTableCount">0 条</span>
+                        </div>
+                        <div class="task-table-scroll">
+                            <table class="task-table">
+                                <thead>
+                                    <tr>
+                                        <th>类型</th>
+                                        <th>状态</th>
+                                        <th>时间</th>
+                                        <th>摘要</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activityTableBody">
+                                    <tr><td colspan="5" class="task-muted">暂无记录</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="task-pagination" id="activityPagination"></div>
+                    </div>
+                </div>
+                <div id="taskSectionHealth" class="task-section-panel">
+                    <div class="task-table-wrap">
+                        <div class="task-table-header">
+                            <span>爬虫健康</span>
+                            <span class="task-muted" id="crawlerHealthCount">0 个</span>
+                        </div>
+                        <div class="task-table-scroll">
+                            <table class="task-table">
+                                <thead>
+                                    <tr>
+                                        <th>爬虫</th>
+                                        <th>成功</th>
+                                        <th>失败</th>
+                                        <th>连续失败</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="crawlerHealthBody">
+                                    <tr><td colspan="5" class="task-muted">暂无爬虫统计</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="task-pagination" id="healthPagination"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 标签页 3：配置中心 -->
+        <div id="configPanel" class="tab-panel">
+            <div class="config-layout-new">
+                <aside class="config-sidebar">
+                    <div class="sidebar-title">配置分类</div>
+                    <button class="nav-item active" data-section="scanner" onclick="showConfigSection('scanner')">📁 扫描设置</button>
+                    <button class="nav-item" data-section="network" onclick="showConfigSection('network')">🌐 网络设置</button>
+                    <button class="nav-item" data-section="crawler" onclick="showConfigSection('crawler')">🕷️ 爬虫设置</button>
+                    <button class="nav-item" data-section="metadata" onclick="showConfigSection('metadata')">✅ 元数据完整性</button>
+                    <button class="nav-item" data-section="summarizer" onclick="showConfigSection('summarizer')">📂 整理设置</button>
+                    <button class="nav-item" data-section="translator" onclick="showConfigSection('translator')">🌏 翻译设置</button>
+                    <button class="nav-item" data-section="scheduler" onclick="showConfigSection('scheduler')">⏰ 定时任务</button>
+                    <div class="sidebar-divider"></div>
+                            <button class="nav-item yaml-nav" onclick="toggleYamlMode()">🔧 YAML 高级模式</button>
+                            <button class="nav-item guide-nav" onclick="window.open('/guide')">📖 使用说明</button>
+                </aside>
+                <div class="config-main">
+                    <!-- 表单模式 -->
+                    <div id="formView">
+                        <!-- 扫描设置 -->
+                        <div id="section-scanner" class="form-section active">
+                            <div class="config-header"><h2>📁 扫描设置</h2></div>
+                            <div class="form-group">
+                                <label class="form-label">影片输入目录</label>
+                                <input type="text" class="form-input" id="scanner_input_directory" placeholder="如: /video">
+                                <div class="form-hint">留空时将在运行时询问输入目录</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">最小文件大小</label>
+                                <input type="text" class="form-input" id="scanner_minimum_size" placeholder="如: 100MiB, 1GiB">
+                                <div class="form-hint">小于此大小的文件将被忽略。支持单位: B, KiB, MiB, GiB</div>
+                            </div>
+                            <div class="toggle-row">
+                                <div class="toggle-label">跳过已有 NFO 的目录<small>如果目录中已存在 NFO 文件则跳过整理</small></div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="scanner_skip_nfo_dir">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">忽略扫描的文件夹（正则表达式，每行一个）</label>
+                                <textarea class="form-input" id="scanner_ignored_folder_name_pattern" rows="3" placeholder="^\.&#10;^#recycle$&#10;^#整理完成$"></textarea>
+                                <div class="form-hint">匹配到的文件夹名将被跳过扫描。使用正则表达式，每行一条</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">影片文件后缀名</label>
+                                <div class="checkbox-group" id="scanner_filename_extensions">
+                                    <label class="checkbox-item"><input type="checkbox" value=".mp4"><span>.mp4</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".mkv"><span>.mkv</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".avi"><span>.avi</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".wmv"><span>.wmv</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".mov"><span>.mov</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".flv"><span>.flv</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".m4v"><span>.m4v</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".webm"><span>.webm</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".mpeg"><span>.mpeg</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".mpg"><span>.mpg</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".ts"><span>.ts</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".m2ts"><span>.m2ts</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".iso"><span>.iso</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".vob"><span>.vob</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".rm"><span>.rm</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".rmvb"><span>.rmvb</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".3gp"><span>.3gp</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".f4v"><span>.f4v</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value=".strm"><span>.strm</span></label>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="save-btn-primary" onclick="saveCurrentSection()">💾 保存配置</button>
+                                <span class="save-hint">会自动保存主配置和定时任务配置</span>
+                            </div>
+                        </div>
+
+                        <!-- 网络设置 -->
+                        <div id="section-network" class="form-section">
+                            <div class="config-header"><h2>🌐 网络设置</h2></div>
+                            <div class="form-group">
+                                <label class="form-label">代理服务器地址</label>
+                                <input type="text" class="form-input" id="network_proxy_server" placeholder="如: http://127.0.0.1:1080">
+                                <div class="form-hint">支持 http, socks5/socks5h，留空表示禁用代理</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">请求失败重试次数</label>
+                                <input type="number" class="form-input" id="network_retry" placeholder="3" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">请求超时时间</label>
+                                <input type="text" class="form-input" id="network_timeout" placeholder="如: PT10S">
+                                <div class="form-hint">ISO 8601 格式，如 PT10S 表示 10 秒，PT1M 表示 1 分钟</div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="save-btn-primary" onclick="saveCurrentSection()">💾 保存配置</button>
+                                <span class="save-hint">会自动保存主配置和定时任务配置</span>
+                            </div>
+                        </div>
+
+                        <!-- 爬虫设置 -->
+                        <div id="section-crawler" class="form-section">
+                            <div class="config-header"><h2>🕷️ 爬虫设置</h2></div>
+                            <div class="form-group">
+                                <label class="form-label">必需字段（至少获取到这些字段才视为抓取成功）</label>
+                                <div class="checkbox-group" id="crawler_required_keys">
+                                    <label class="checkbox-item"><input type="checkbox" value="cover"><span>封面</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value="title"><span>标题</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value="plot"><span>剧情</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value="genre"><span>类别</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value="actress"><span>女优</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value="director"><span>导演</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value="producer"><span>制作商</span></label>
+                                    <label class="checkbox-item"><input type="checkbox" value="publisher"><span>发行商</span></label>
+                                </div>
+                            </div>
+                            <div class="toggle-row">
+                                <div class="toggle-label">努力爬取更准确信息<small>会增加部分站点的爬取耗时</small></div>
+                                <label class="toggle-switch"><input type="checkbox" id="crawler_hardworking"><span class="slider"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div class="toggle-label">使用网页番号作为最终番号<small>启用时会对番号大小写等进行更正</small></div>
+                                <label class="toggle-switch"><input type="checkbox" id="crawler_respect_site_avid"><span class="slider"></span></label>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">每次刮削后等待时间</label>
+                                <input type="text" class="form-input" id="crawler_sleep_after_scraping" placeholder="如: PT1S, PT0S 表示不等待">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">使用 JavDB 封面</label>
+                                <select class="form-select" id="crawler_use_javdb_cover">
+                                    <option value="fallback">fallback - 优先使用其他站点封面（避免水印）</option>
+                                    <option value="yes">yes - 总是使用 JavDB 封面</option>
+                                    <option value="no">no - 从不使用 JavDB 封面</option>
+                                </select>
+                            </div>
+                            <div class="toggle-row">
+                                <div class="toggle-label">统一女优艺名<small>启用时会尝试将女优的多个艺名统一成一个</small></div>
+                                <label class="toggle-switch"><input type="checkbox" id="crawler_normalize_actress_name"><span class="slider"></span></label>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">JavDB Cookie（手动填入）</label>
+                                <input type="text" class="form-input" id="network_javdb_cookie" placeholder="如: _jdb_session=xxx; locale=zh; over18=1">
+                                <div class="form-hint">
+                                    自动从浏览器读取失败时生效。获取方式：Chrome 访问 javdb.com 并登录 → F12 → Application → Cookies → 复制各字段拼成 key=value; key=value 格式。<br>
+                                    <strong>必需字段：</strong>_jdb_session（登录凭据）、locale=zh（否则 xpath 解析失败）、over18=1
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="save-btn-primary" onclick="saveCurrentSection()">💾 保存配置</button>
+                                <span class="save-hint">会自动保存主配置和定时任务配置</span>
+                            </div>
+                        </div>
+
+                        <!-- 元数据完整性 -->
+                        <div id="section-metadata" class="form-section">
+                            <div class="config-header"><h2>✅ 元数据完整性</h2></div>
+                            <div class="toggle-row">
+                                <div class="toggle-label">启用完整性判断<small>不影响刮削成功，只决定是否后续优化</small></div>
+                                <label class="toggle-switch"><input type="checkbox" id="metadata_enabled"><span class="slider"></span></label>
+                            </div>
+                            <div class="toggle-row">
+                                <div class="toggle-label">自动优化不完整任务<small>daemon 周期中自动补全成功但不完整的任务（手动刮削不触发）</small></div>
+                                <label class="toggle-switch"><input type="checkbox" id="metadata_auto_refresh"><span class="slider"></span></label>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">自动优化间隔</label>
+                                <input type="text" class="form-input" id="metadata_refresh_after" placeholder="如: P7D">
+                                <div class="form-hint">ISO 8601 格式。手动优化不受此间隔限制</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">完整字段需求</label>
+                                <table class="metadata-field-table">
+                                    <thead>
+                                        <tr>
+                                            <th>字段</th>
+                                            <th>要求完整</th>
+                                            <th>中文偏好</th>
+                                            <th>中文比例</th>
+                                            <th>最小长度</th>
+                                            <th>最小数量</th>
+                                            <th>拒绝值</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="metadataFieldsBody"></tbody>
+                                </table>
+                            </div>
+                            <div class="form-actions">
+                                <button class="save-btn-primary" onclick="saveCurrentSection()">💾 保存配置</button>
+                                <span class="save-hint">会保存到主配置 metadata_complete</span>
+                            </div>
+                        </div>
+
+                        <!-- 整理设置 -->
+                        <div id="section-summarizer" class="form-section">
+                            <div class="config-header"><h2>📂 整理设置</h2></div>
+                            
+                            <div class="sub-section">
+                                <div class="sub-section-title">文件整理</div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">移动文件到目标文件夹<small>关闭时数据保存到同级文件夹，不移动文件</small></div>
+                                    <label class="toggle-switch"><input type="checkbox" id="summarizer_move_files"><span class="slider"></span></label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">输出文件夹命名规则</label>
+                                    <input type="text" class="form-input" id="summarizer_path_output_folder_pattern" placeholder="如: JAV/{actress}/[{num}] {title}">
+                                    <div class="form-hint">可用变量: {actress}, {num}, {title}, {genre}, {censor} 等</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">文件基础命名规则</label>
+                                    <input type="text" class="form-input" id="summarizer_path_basename_pattern" placeholder="如: {num}">
+                                </div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">使用硬链接整理文件<small>可节省空间，但不是所有文件系统都支持</small></div>
+                                    <label class="toggle-switch"><input type="checkbox" id="summarizer_path_hard_link"><span class="slider"></span></label>
+                                </div>
+                            </div>
+                            
+                            <div class="sub-section">
+                                <div class="sub-section-title">标题与默认值</div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">删除标题尾部女优名</div>
+                                    <label class="toggle-switch"><input type="checkbox" id="summarizer_title_remove_trailing_actor_name"><span class="slider"></span></label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">标题缺失时显示</label>
+                                    <input type="text" class="form-input" id="summarizer_default_title" placeholder="#未知标题">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">女优缺失时显示</label>
+                                    <input type="text" class="form-input" id="summarizer_default_actress" placeholder="#未知女优">
+                                </div>
+                            </div>
+                            
+                            <div class="sub-section">
+                                <div class="sub-section-title">NFO 与封面</div>
+                                <div class="form-group">
+                                    <label class="form-label">NFO 标题格式</label>
+                                    <input type="text" class="form-input" id="summarizer_nfo_title_pattern" placeholder="如: {num} {title}">
+                                </div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">NFO 中包含演员 TMDb ID</div>
+                                    <label class="toggle-switch"><input type="checkbox" id="summarizer_nfo_include_actor_tmdbid"><span class="slider"></span></label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">打码情况显示文本</label>
+                                    <div class="triple-input">
+                                        <div class="form-group">
+                                            <input type="text" class="form-input" id="summarizer_censor_0" placeholder="无码">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" class="form-input" id="summarizer_censor_1" placeholder="有码">
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="text" class="form-input" id="summarizer_censor_2" placeholder="打码情况未知">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">下载高清封面<small>约 8-10 MiB，网络不佳时会降低整理速度</small></div>
+                                    <label class="toggle-switch"><input type="checkbox" id="summarizer_cover_highres"><span class="slider"></span></label>
+                                </div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">在封面添加水印标签</div>
+                                    <label class="toggle-switch"><input type="checkbox" id="summarizer_cover_add_label"><span class="slider"></span></label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">横版封面文件名</label>
+                                    <input type="text" class="form-input" id="summarizer_fanart_basename_pattern" placeholder="fanart">
+                                </div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">下载剧照</div>
+                                    <label class="toggle-switch"><input type="checkbox" id="summarizer_extra_fanarts_enabled"><span class="slider"></span></label>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">剧照爬取间隔</label>
+                                    <input type="text" class="form-input" id="summarizer_extra_fanarts_scrap_interval" placeholder="如: PT1.5S">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="save-btn-primary" onclick="saveCurrentSection()">💾 保存配置</button>
+                                <span class="save-hint">会自动保存主配置和定时任务配置</span>
+                            </div>
+                        </div>
+
+                        <!-- 翻译设置 -->
+                        <div id="section-translator" class="form-section">
+                            <div class="config-header"><h2>🌏 翻译设置</h2></div>
+                            <div class="form-group">
+                                <label class="form-label">翻译引擎</label>
+                                <select class="form-select" id="translator_engine" onchange="onTranslatorEngineChange()">
+                                    <option value="">禁用翻译</option>
+                                    <option value="google">Google 翻译（免费）</option>
+                                    <option value="openai">OpenAI / 兼容 API</option>
+                                </select>
+                            </div>
+                            
+                            <div id="translator_engine_fields" style="display:none">
+                                <div id="field_openai" style="display:none">
+                                    <div class="form-group">
+                                        <label class="form-label">API URL</label>
+                                        <input type="text" class="form-input" id="translator_openai_url" placeholder="https://api.groq.com/openai/v1/chat/completions">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">API Key</label>
+                                        <input type="text" class="form-input" id="translator_openai_api_key">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">模型名称</label>
+                                        <input type="text" class="form-input" id="translator_openai_model" placeholder="llama-3.1-70b-versatile">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">系统提示词（System Prompt）</label>
+                                        <textarea class="form-input" id="translator_openai_system_prompt" rows="4" placeholder="留空使用默认提示词"></textarea>
+                                        <div class="form-hint">自定义翻译时的系统角色设定，留空则使用默认提示词</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="sub-section">
+                                <div class="sub-section-title">翻译字段</div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">翻译标题</div>
+                                    <label class="toggle-switch"><input type="checkbox" id="translator_fields_title"><span class="slider"></span></label>
+                                </div>
+                                <div class="toggle-row">
+                                    <div class="toggle-label">翻译剧情简介</div>
+                                    <label class="toggle-switch"><input type="checkbox" id="translator_fields_plot"><span class="slider"></span></label>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="save-btn-primary" onclick="saveCurrentSection()">💾 保存配置</button>
+                                <span class="save-hint">会自动保存主配置和定时任务配置</span>
+                            </div>
+                        </div>
+
+                        <!-- 定时任务 -->
+                        <div id="section-scheduler" class="form-section">
+                            <div class="config-header"><h2>⏰ 定时任务设置</h2></div>
+
+                            <!-- 刮削调度器 -->
+                            <h3 style="margin-bottom:12px;color:#60a5fa">📥 定时刮削</h3>
+                            <div class="toggle-row">
+                                <div class="toggle-label">启用定时刮削</div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="scheduler_enabled" onchange="onSchedulerModeChange()">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div id="scheduler_settings">
+                                <div class="form-group">
+                                    <label class="form-label">定时模式</label>
+                                    <select class="form-select" id="scheduler_mode" onchange="onSchedulerModeChange()">
+                                        <option value="cron">每日固定时间</option>
+                                        <option value="interval">按时间间隔</option>
+                                    </select>
+                                </div>
+                                <div id="scheduler_cron_settings">
+                                    <div class="form-group">
+                                        <label class="form-label">执行时间（24小时制）</label>
+                                        <input type="text" class="form-input" id="scheduler_cron_time" placeholder="如: 03:00">
+                                    </div>
+                                </div>
+                                <div id="scheduler_interval_settings" style="display:none">
+                                    <div class="form-group">
+                                        <label class="form-label">间隔小时数</label>
+                                        <input type="number" class="form-input" id="scheduler_interval_hours" placeholder="6" min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">间隔分钟数</label>
+                                        <input type="number" class="form-input" id="scheduler_interval_minutes" placeholder="0" min="0" max="59">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr style="border-color:#374151;margin:20px 0">
+
+                            <!-- 优化调度器 -->
+                            <h3 style="margin-bottom:12px;color:#60a5fa">🔄 定时优化</h3>
+                            <div class="toggle-row">
+                                <div class="toggle-label">启用定时优化</div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="refresh_scheduler_enabled" onchange="onRefreshSchedulerModeChange()">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div id="refresh_scheduler_settings">
+                                <div class="form-group">
+                                    <label class="form-label">定时模式</label>
+                                    <select class="form-select" id="refresh_scheduler_mode" onchange="onRefreshSchedulerModeChange()">
+                                        <option value="cron">每日固定时间</option>
+                                        <option value="interval">按时间间隔</option>
+                                    </select>
+                                </div>
+                                <div id="refresh_scheduler_cron_settings">
+                                    <div class="form-group">
+                                        <label class="form-label">执行时间（24小时制）</label>
+                                        <input type="text" class="form-input" id="refresh_scheduler_cron_time" placeholder="如: 04:00">
+                                    </div>
+                                </div>
+                                <div id="refresh_scheduler_interval_settings" style="display:none">
+                                    <div class="form-group">
+                                        <label class="form-label">间隔小时数</label>
+                                        <input type="number" class="form-input" id="refresh_scheduler_interval_hours" placeholder="24" min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">间隔分钟数</label>
+                                        <input type="number" class="form-input" id="refresh_scheduler_interval_minutes" placeholder="0" min="0" max="59">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="save-btn-primary" onclick="saveCurrentSection()">💾 保存配置</button>
+                                <span class="save-hint">保存后会立即应用定时任务设置</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- YAML 高级模式 -->
+                    <div id="yamlView" style="display:none">
+                        <div class="yaml-toolbar">
+                            <button class="back-btn" onclick="toggleYamlMode()">← 返回表单模式</button>
+                            <button class="back-btn" onclick="window.open('/guide')">📖 查看完整使用说明</button>
+                            <span class="save-hint">⚠️ 直接编辑 YAML，适合需要修改高级选项或保留注释的用户</span>
+                        </div>
+                        <div class="yaml-layout">
+                            <div class="config-card">
+                                <h3>📅 定时任务配置 (web_config.yml)</h3>
+                                <textarea id="schedulerConfig" placeholder="加载中..."></textarea>
+                                <button class="save-btn" onclick="saveConfig('scheduler')">💾 保存配置</button>
+                            </div>
+                            <div class="config-card">
+                                <h3>🛠️ 主程序配置 (config.yml)</h3>
+                                <textarea id="generalConfig" placeholder="加载中..."></textarea>
+                                <button class="save-btn" onclick="saveConfig('general')">💾 保存配置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 标签页 4：爬虫管理 -->
+        <div id="crawlersPanel" class="tab-panel">
+            <div class="crawler-layout">
+                <div class="crawler-pool">
+                    <h3>📦 可用爬虫池</h3>
+                    <div class="crawler-pool-sub">点击 + 或拖拽添加到右侧类型</div>
+                    <div class="pool-items" id="crawlerPool"></div>
+                </div>
+                <div class="crawler-zones" id="crawlerZones">
+                    <div class="crawler-zone">
+                        <h4><span class="zone-type">normal</span><span class="zone-count" id="count-normal">0</span></h4>
+                        <div class="zone-droparea" data-type="normal" id="zone-normal"></div>
+                    </div>
+                    <div class="crawler-zone">
+                        <h4><span class="zone-type">fc2</span><span class="zone-count" id="count-fc2">0</span></h4>
+                        <div class="zone-droparea" data-type="fc2" id="zone-fc2"></div>
+                    </div>
+                    <div class="crawler-zone">
+                        <h4><span class="zone-type">cid</span><span class="zone-count" id="count-cid">0</span></h4>
+                        <div class="zone-droparea" data-type="cid" id="zone-cid"></div>
+                    </div>
+                    <div class="field-priority-panel">
+                        <div class="field-priority-header">
+                            <h3>字段来源优先级</h3>
+                            <span>Fallback：类型顺序</span>
+                        </div>
+                        <div class="field-priority-grid" id="fieldPriorityGrid"></div>
+                    </div>
+                    <div class="crawler-actions">
+                        <span class="hint">💡 提示：同区域内可拖拽调整优先级，排在前面的优先使用</span>
+                        <button class="save-btn" onclick="saveCrawlerConfig()">💾 保存爬虫配置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 标签页 5：爬虫调试 -->
+        <div id="debugPanel" class="tab-panel">
+            <div class="debug-layout">
+                <div class="debug-form">
+                    <div class="debug-form-group">
+                        <label for="debugCrawlerSelect">爬虫选择</label>
+                        <select id="debugCrawlerSelect">
+                            <option value="">-- 选择爬虫 --</option>
+                        </select>
+                    </div>
+                    <div class="debug-form-group">
+                        <label for="debugDataSrc">数据类型</label>
+                        <select id="debugDataSrc">
+                            <option value="normal">normal (普通番号)</option>
+                            <option value="fc2">fc2 (FC2番号)</option>
+                            <option value="cid">cid (Content ID)</option>
+                        </select>
+                    </div>
+                    <div class="debug-form-group">
+                        <label for="debugDvdid">DVD ID (番号)</label>
+                        <input id="debugDvdid" type="text" class="debug-id-input" placeholder="如: IPX-811">
+                    </div>
+                    <div class="debug-form-group">
+                        <label for="debugCid">Content ID (cid)</label>
+                        <input id="debugCid" type="text" class="debug-cid-input" placeholder="如: h_1234abcd00001">
+                    </div>
+                    <button class="debug-run-btn" onclick="runCrawlerDebug()">▶ 调试运行</button>
+                </div>
+
+                <div class="debug-result">
+                    <div class="debug-result-header">
+                        <h3>📋 抓取结果</h3>
+                        <span class="debug-elapsed" id="debugElapsed"></span>
+                    </div>
+                    <div class="debug-result-body" id="debugResultBody">
+                        <div class="debug-empty">选择爬虫并输入番号后，点击「调试运行」查看结果</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="detailOverlay" class="detail-overlay" aria-hidden="true">
+        <section class="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+            <div class="detail-header">
+                <div class="detail-title-block">
+                    <div class="detail-kicker" id="detailKicker">任务详情</div>
+                    <h2 id="detailTitle">-</h2>
+                </div>
+                <button class="detail-close" onclick="closeDetailPanel()" aria-label="关闭">
+                    <span aria-hidden="true">×</span>
+                    <span>关闭</span>
+                </button>
+            </div>
+            <div class="detail-tabs" id="detailTabs"></div>
+            <div class="detail-body" id="detailBody"></div>
+        </section>
+    </div>
+
+    <div id="rescrapeModeOverlay" class="rescrape-overlay" aria-hidden="true">
+        <section class="rescrape-mode-dialog" role="dialog" aria-modal="true" aria-labelledby="rescrapeModeTitle">
+            <button class="rescrape-x" onclick="closeRescrapeMode()" aria-label="关闭">×</button>
+            <div class="rescrape-kicker">重新刮削</div>
+            <h2 id="rescrapeModeTitle">选择本次处理方式</h2>
+            <p class="rescrape-intro">自动模式保持原有行为；自由选择模式会先抓取候选，确认前不会下载或修改媒体文件。</p>
+            <div class="rescrape-mode-grid">
+                <button class="rescrape-mode-card primary" onclick="startRescrapeMode('auto')">
+                    <span class="mode-icon">⚡</span>
+                    <strong>自动重新刮削</strong>
+                    <span>按当前爬虫优先级自动汇总并立即更新</span>
+                    <em>默认模式</em>
+                </button>
+                <button class="rescrape-mode-card" onclick="startRescrapeMode('interactive')">
+                    <span class="mode-icon">✦</span>
+                    <strong>自由选择模式</strong>
+                    <span>逐字段选择来源并可继续手动编辑</span>
+                    <em>确认后才更新</em>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <div id="rescrapeEditorOverlay" class="rescrape-overlay editor" aria-hidden="true">
+        <section class="rescrape-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="rescrapeEditorTitle">
+            <header class="rescrape-editor-header">
+                <div>
+                    <div class="rescrape-kicker">自由选择重新刮削</div>
+                    <h2 id="rescrapeEditorTitle">载入候选数据</h2>
+                    <p id="rescrapeEditorSubtitle">媒体文件将在确认后才处理</p>
+                </div>
+                <button class="rescrape-x inline" onclick="closeRescrapeEditor()" aria-label="关闭">×</button>
+            </header>
+            <div class="rescrape-editor-toolbar">
+                <span class="status-badge deferred">待人工选择</span>
+                <span>选择任意来源后，仍可在最终值中继续编辑。</span>
+                <button onclick="applyAllAutoRescrapeValues()">全部采用自动推荐</button>
+                <button onclick="applyAllCurrentRescrapeValues()">全部保留当前值</button>
+            </div>
+            <div id="rescrapeEditorBody" class="rescrape-editor-body">
+                <div class="rescrape-loading">正在加载候选数据…</div>
+            </div>
+            <footer class="rescrape-editor-footer">
+                <button class="danger-action" onclick="cancelInteractiveRescrape()">取消本次重新刮削</button>
+                <span class="rescrape-footer-note">关闭窗口不会丢失，可以从任务中心继续</span>
+                <button onclick="closeRescrapeEditor()">稍后处理</button>
+                <button class="primary-action" id="rescrapeApplyBtn" onclick="submitInteractiveRescrape()">确认并更新</button>
+            </footer>
+        </section>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/js/app.js?v=20260723-interactive-rescrape-5"></script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+# ── 刮削调度器 ──
+scheduler:
+  # 是否启用定时刮削: true 或 false
+  enabled: true
+  
+  # 模式: 'cron' (每日固定时间) 或 'interval' (按时间间隔)
+  mode: 'interval'
+  
+  # interval 模式的配置
+  interval:
+    # 可以单独或组合使用: days, hours, minutes, seconds
+    hours: 6
+    # minutes: 30 # 示例：如果想每隔6小时30分钟运行，可以这样写
+  
+  # 模式选择: 'cron' 或 'interval'
+  #mode: 'cron'
+  
+    #cron:
+    # 24小时制时间，'小时:分钟'
+    #    time: '02:30'
+
+# ── 优化调度器 ──
+refresh_scheduler:
+  # 是否启用定时优化: true 或 false
+  enabled: false
+  
+  # 模式: 'cron' (每日固定时间) 或 'interval' (按时间间隔)
+  mode: 'interval'
+  
+  # interval 模式配置:
+  interval:
+    hours: 24
