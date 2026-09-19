@@ -878,3 +878,16 @@ class TestTriggerScrapeTargetFile:
         assert res.status_code == 202
         body = res.get_json()
         assert body["target_file"] == target
+
+
+def test_scheduler_config_created_from_template(tmp_path, monkeypatch):
+    template = tmp_path / "web_config.example.yml"
+    template.write_text("scheduler:\n  enabled: false\n", encoding="utf-8")
+    target = tmp_path / "web_config.yml"
+    monkeypatch.setattr(web_server, "_current_dir", str(tmp_path))
+    monkeypatch.setattr(web_server, "SCHEDULER_CONFIG_FILE", str(target))
+    web_server.ensure_scheduler_config()
+    assert target.read_bytes() == template.read_bytes()
+    target.write_text("personal settings", encoding="utf-8")
+    web_server.ensure_scheduler_config()
+    assert target.read_text(encoding="utf-8") == "personal settings"

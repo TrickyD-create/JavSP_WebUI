@@ -41,6 +41,23 @@ _background_refresh_lock = threading.Lock()
 scheduler = BackgroundScheduler(daemon=True)
 
 
+def ensure_scheduler_config():
+    """首次启动从公开模板创建本地调度配置，保留已有个人配置。"""
+    if os.path.exists(SCHEDULER_CONFIG_FILE):
+        return
+    template = os.path.join(_current_dir, 'web_config.example.yml')
+    with open(template, 'r', encoding='utf-8') as source:
+        content = source.read()
+    try:
+        with open(SCHEDULER_CONFIG_FILE, 'x', encoding='utf-8') as target:
+            target.write(content)
+    except FileExistsError:
+        pass
+
+
+ensure_scheduler_config()
+
+
 def reload_javsp_config_cache():
     """ConfZ caches Cfg() in-process; reset it after WebUI config changes."""
     Cfg.confz_instance = None

@@ -2,7 +2,7 @@
 
 基于 [Yuukiy/JavSP](https://github.com/Yuukiy/JavSP) 的 Web UI 与 Docker 扩展版本，支持媒体元数据抓取、任务队列、定时任务和逐字段重新刮削。
 
-Docker 镜像：[madenginner/javsp](https://hub.docker.com/r/madenginner/javsp)。本次公开源码的应用文件已与 Docker Hub `2.7` / `latest` 镜像（摘要 `sha256:03dca567ef0272a113f20fa75b2d746656210aa318bcf727949db6d463e8e92a`）逐字节核对。
+Docker 镜像：[madenginner/javsp](https://hub.docker.com/r/madenginner/javsp)。首次公开提交的应用文件已与 Docker Hub `2.7` / `latest` 镜像（摘要 `sha256:03dca567ef0272a113f20fa75b2d746656210aa318bcf727949db6d463e8e92a`）逐字节核对。
 
 ## 快速启动
 
@@ -152,3 +152,25 @@ notifications:
   notify_on_success: true
   notify_on_failure: true
 ```
+
+
+## 开发与个人配置
+
+日常只需维护当前克隆目录，通过 `git add`、`git commit` 和 `git push` 更新 GitHub。
+
+- `config.example.yml` 和 `web_ui/web_config.example.yml` 是可公开的模板，请勿填入真实凭据。
+- `config.yml` 和 `web_ui/web_config.yml` 是本地运行配置，首次启动从模板生成，Git 和 Docker 构建均忽略它们。
+- 数据库、日志、`.env`、私钥和编辑器目录也已忽略。忽略规则不等于万能的隐私检查，提交前仍应检查 `git diff --cached`。
+- 可执行 `git config core.hooksPath .githooks` 启用提交与推送检查，拦截常见私密文件、个人目录路径和密钥。不要使用 `git add -f` 强行提交个人文件。
+
+常用更新流程：
+
+```bash
+git status
+git add javsp/ web_ui/ tests/ README.md
+git diff --cached
+git commit -m "说明本次修改"
+git push
+```
+
+推送需要已配置 GitHub 身份验证；新电脑需单独登录。GitHub 源码更新不会自动更新 Docker Hub 镜像。

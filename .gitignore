@@ -161,3 +161,7 @@ build_log.txt
 *.sqlite3
 *.pem
 *.key
+
+# Local agent instructions and scheduler settings
+AGENTS.md
+web_ui/web_config.yml

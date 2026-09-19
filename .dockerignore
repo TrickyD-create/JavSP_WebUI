@@ -52,3 +52,6 @@ setup.py
 .env.*
 .codex/
 .agents/
+
+# Local scheduler settings; generated from the public template
+web_ui/web_config.yml
