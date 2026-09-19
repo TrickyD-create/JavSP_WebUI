@@ -65,7 +65,7 @@ curl -X POST http://localhost:5000/api/trigger-scrape \
 - **离线 HTML 指南**：[web_ui/guide.html](web_ui/guide.html)，下载后用浏览器打开。GitHub 文件页显示的是 HTML 源码。
 - **配置参数**：[Config Usage.md](Config%20Usage.md)。
 - **接口参考**：[Web API Usage.md](Web%20API%20Usage.md)。
-- **源码运行与开发**：[CONTRIBUTING.md](CONTRIBUTING.md)。
+- **从源码运行**：[安装与启动说明](guide.md#source-setup)。
 
 ## 致谢与许可
 

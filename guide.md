@@ -6,8 +6,23 @@ JavSP 是一个多站点 AV 元数据刮削器。本文档涵盖 **config.yml �
 
 [返回项目首页](README.md) · [配置模板](config.example.yml) · [完整 API 文档](Web%20API%20Usage.md)
 
+<a id="source-setup"></a>
+
+## 从源码运行
+
+需要 Python 3.10–3.12 和 Poetry：
+
+```bash
+poetry install
+poetry run pip install -r web_ui/requirements.txt
+poetry run python web_ui/web_server.py
+```
+
+本地运行时请在配置页面将扫描目录从 `/video` 改为实际媒体目录，并设置可写的状态库路径。
+
 ## 目录
 
+- [从源码运行](#source-setup)
 - [scanner 扫描](#config-scanner)
 - [network 网络](#config-network)
 - [crawler 爬虫](#config-crawler)

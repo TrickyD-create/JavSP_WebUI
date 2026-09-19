@@ -14,7 +14,7 @@ def private_path(name):
     return (
         p.name in {'config.yml', 'web_config.yml', '.envrc', '.DS_Store', 'AGENTS.md', 'build_log.txt'}
         or (p.name.startswith('.env') and p.name != '.env.example')
-        or any(part in {'.git', '.venv', '.trae', '.codex', '.agents', 'dist', 'private-backups'} for part in p.parts)
+        or any(part in {'.git', '.venv', '.trae', '.codex', '.agents', 'dist', 'private-backups', 'local-notes'} for part in p.parts)
         or p.suffix in {'.db', '.sqlite', '.sqlite3', '.log', '.pem', '.key'}
         or bool(re.search(r'\.(?:db|sqlite3?)-(?:wal|shm|journal)$', p.name))
     )

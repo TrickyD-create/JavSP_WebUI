@@ -165,3 +165,6 @@ build_log.txt
 # Local agent instructions and scheduler settings
 AGENTS.md
 web_ui/web_config.yml
+
+# Local-only maintenance notes
+/local-notes/
