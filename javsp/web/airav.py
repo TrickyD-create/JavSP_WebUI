@@ -8,6 +8,7 @@ from javsp.web.base import Request, get_html
 from javsp.web.exceptions import *
 from javsp.config import Cfg
 from javsp.datatype import MovieInfo
+from javsp.lib import contains_exact_movie_id
 
 # 初始化Request实例
 request = Request(use_scraper=True)
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 base_url = 'https://airav.io'
 
 
-def search_movie(dvdid):
+def search_movie(dvdid, *, strict=False):
     """通过搜索番号获取指定的影片在网站上的ID"""
     search_url = f'{base_url}/search_result?kw={dvdid}'
     html = get_html(search_url)
@@ -62,8 +63,9 @@ def search_movie(dvdid):
                 link = link_tags[0].get('href')
                 logger.debug(f"结果 {i+1} 链接: {link}")
             
-            # 简单匹配：只要标题里包含番号或者链接里包含番号
-            if dvdid.lower() in title.lower() or dvdid.lower() in link.lower():
+            # 别名查询要求完整番号匹配；常规刮削保留原搜索方式
+            if (contains_exact_movie_id(title + " " + (link or ""), dvdid) if strict
+                else (dvdid.lower() in title.lower() or dvdid.lower() in link.lower())):
                 if link:
                     target_link = link
                     logger.debug(f"找到匹配的结果: {title} - {link}")
@@ -83,7 +85,8 @@ def search_movie(dvdid):
 def parse_data(movie: MovieInfo):
     """解析指定番号的影片数据"""
     # 搜索番号获取详情页链接
-    detail_url = search_movie(movie.dvdid)
+    detail_url = (search_movie(movie.dvdid, strict=True) if getattr(movie, "_strict_dvdid_match", False)
+                  else search_movie(movie.dvdid))
     
     # 进入详情页抓取信息 - 添加重试机制
     html = None

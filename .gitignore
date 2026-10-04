@@ -168,3 +168,7 @@ web_ui/web_config.yml
 
 # Local-only maintenance notes
 /local-notes/
+
+# 女优别名管理自动备份和原子写入临时文件
+data/actress_alias.json.*.bak
+data/.actress_alias-*

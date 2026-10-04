@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JAVSP 管理面板</title>
     <script src="/js-yaml.min.js"></script>
-    <link rel="stylesheet" href="/static/css/app.css?v=20260724-task-center-ui-1">
+    <link rel="stylesheet" href="/static/css/app.css?v=20261005-actress-data-3">
 </head>
 <body>
 
@@ -16,6 +16,7 @@
             <button class="tab-btn" onclick="switchTab('tasks')">📊 任务中心</button>
             <button class="tab-btn" onclick="switchTab('config')">⚙️ 参数配置</button>
             <button class="tab-btn" onclick="switchTab('crawlers')">🕷️ 爬虫管理</button>
+            <button class="tab-btn" onclick="switchTab('actress')">👤 女优数据管理</button>
             <button class="tab-btn" onclick="switchTab('debug')">🔍 爬虫调试</button>
             <button class="tab-btn guide-btn" onclick="window.open('/guide')">📖 使用说明</button>
         </div>
@@ -87,6 +88,49 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+
+        <div id="actressPanel" class="tab-panel">
+            <div class="task-center-layout">
+                <div class="task-toolbar"><div class="task-toolbar-copy"><h2>女优数据管理</h2><p>通过番号收集单演员别名，或手动维护词库。所有编辑均需确认保存。</p></div></div>
+                <div class="alias-layout">
+                    <section class="alias-card">
+                        <h3>番号查询</h3>
+                        <p class="task-muted">使用当前启用的爬虫；任一来源返回多位演员则查询失败。</p>
+                        <div class="alias-actions"><input id="aliasDvdid" class="form-input" placeholder="例如 ABC-123" aria-label="查询番号"><button id="aliasQueryBtn" onclick="queryActressAliases()">查询候选名字</button></div>
+                        <div id="aliasSources" class="alias-sources" aria-live="polite"></div>
+                        <h3>手动维护</h3>
+                        <div class="alias-actions"><input id="aliasSearch" onkeydown="if(event.key === 'Enter') searchActressAliases()" class="form-input" placeholder="统一名字或别名" aria-label="搜索女优"><button onclick="searchActressAliases()">搜索</button><button onclick="newActressAlias()">新增女优</button></div>
+                        <div id="aliasSearchResults" class="alias-results"></div>
+                    </section>
+                    <section class="alias-card">
+                        <h3 id="aliasEditorTitle">名字草稿</h3>
+                        <p class="task-muted" id="aliasEditorHint">查询或选择已有记录开始编辑。勾选操作不会修改文件。</p>
+                        <fieldset id="aliasEditor" disabled>
+                            <label>统一名字<input id="aliasFixedName" class="form-input" oninput="renderAliasPreview()" aria-label="统一名字"></label>
+                            <div id="aliasNameChoices" class="alias-name-choices"></div>
+                            <div class="alias-actions"><textarea id="aliasNewNames" rows="2" class="form-input" placeholder="补充别名（多个名字用换行或逗号分隔）" aria-label="补充别名"></textarea><button onclick="addActressAliasNames()">添加到草稿</button></div>
+                            <h4>待保存变更</h4><pre id="aliasPreview" class="alias-preview" aria-live="polite"></pre>
+                            <button id="aliasSaveBtn" class="primary-action" onclick="saveActressAliases()">确认保存</button>
+                            <button onclick="cancelActressAliasDraft()">取消草稿</button>
+                        </fieldset>
+                    </section>
+                </div>
+                <section class="alias-card alias-normalize">
+                    <div class="alias-normalize-heading">
+                        <h3>女优名归一化</h3>
+                        <span id="normalizeActressSummary" class="task-muted" aria-live="polite">尚未执行</span>
+                    </div>
+                    <p class="task-muted">将历史影片中的演员名字按当前别名库统一，更新 NFO 和任务记录。</p>
+                    <label for="actressNormalizePath" class="alias-path-label">历史影片目录</label>
+                    <input id="actressNormalizePath" class="form-input" placeholder="例如 /video/JAV" aria-label="归一化目录路径">
+                    <div class="alias-normalize-actions">
+                        <label class="alias-move-option"><input type="checkbox" id="normalizeActressMove"><span>同时按当前命名规则移动文件</span></label>
+                        <button id="normalizeActressBtn" class="primary-action" onclick="normalizeActressMetadata()">归一化女优名</button>
+                    </div>
+                </section>
             </div>
         </div>
 
@@ -169,20 +213,7 @@
                             <button onclick="importLegacyMetadata()">导入 / 重新读取</button>
                         </div>
                     </details>
-                    <details class="task-maintenance-card">
-                        <summary>
-                            <span class="task-maintenance-icon" aria-hidden="true">🪄</span>
-                            <span class="task-maintenance-heading">
-                                <strong>女优名归一化</strong>
-                                <small id="normalizeActressSummary">尚未执行</small>
-                            </span>
-                            <span class="task-maintenance-chevron" aria-hidden="true">⌄</span>
-                        </summary>
-                        <div class="task-maintenance-content">
-                            <label class="task-muted task-checkbox-line"><input type="checkbox" id="normalizeActressMove"> 按当前规则移动</label>
-                            <button id="normalizeActressBtn" onclick="normalizeActressMetadata()">归一化女优名</button>
-                        </div>
-                    </details>
+
                 </div>
                 <div class="task-control-row task-browser-bar">
                     <div class="task-section-tabs">
@@ -911,7 +942,8 @@
 
     <div id="toast" class="toast"></div>
 
-    <script src="/static/js/app.js?v=20260723-interactive-rescrape-5"></script>
+    <script src="/static/js/actress.js?v=20261005-actress-data-3"></script>
+    <script src="/static/js/app.js?v=20261005-actress-data-3"></script>
 
 </body>
 </html>

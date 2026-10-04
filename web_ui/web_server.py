@@ -24,6 +24,9 @@ from javsp.task import (
     TaskStore,
 )
 from javsp.datatype import MovieInfo
+from javsp.actress_alias import (
+    read_alias_document, save_alias_change, analyze_actress_sources, AliasConflict,
+)
 from javsp.web.exceptions import CrawlerError, MovieNotFoundError
 
 # --- 1. 基础配置 ---
@@ -1718,6 +1721,83 @@ def crawler_debug_api():
         tb = traceback.format_exc()
         logging.error(f"爬虫调试异常: {tb}")
         return jsonify({"success": False, "error": str(e), "type": "unknown_error", "elapsed": elapsed, "traceback": tb[:8000]})
+
+
+# --- 女优数据管理：查询只读，只有明确确认的保存请求可修改词库 ---
+ACTRESS_ALIAS_FILE = os.path.join(_root_dir, 'data', 'actress_alias.json')
+
+
+def query_actress_sources(dvdid):
+    import tempfile
+    fd, output = tempfile.mkstemp(suffix='.json')
+    os.close(fd)
+    try:
+        result = subprocess.run(
+            [sys.executable, '-m', 'javsp.actress_lookup', '-c', GENERAL_CONFIG_FILE,
+             '--dvdid', dvdid, '--output', output],
+            cwd=_root_dir, capture_output=True, text=True, timeout=180,
+        )
+        if result.returncode:
+            logging.error('女优查询子进程失败: %s', result.stderr[-2000:])
+            raise ValueError('查询启动失败，请检查配置及服务器日志')
+        with open(output, encoding='utf-8') as source:
+            return json.load(source)
+    finally:
+        os.unlink(output)
+
+
+@app.route('/api/actress-aliases', methods=['GET', 'POST'])
+def actress_aliases_api():
+    try:
+        if request.method == 'POST':
+            body = request.get_json(silent=True) or {}
+            result = save_alias_change(
+                ACTRESS_ALIAS_FILE, revision=body.get('revision'),
+                confirmed=body.get('confirmed'), name=body.get('name'),
+                aliases=body.get('aliases'), original_name=body.get('original_name'),
+                mode=body.get('mode', 'append'),
+            )
+            return jsonify(success=True, message='别名库已保存，后续新启动的刮削任务将使用新词库', **result)
+        data, revision = read_alias_document(ACTRESS_ALIAS_FILE)
+        if request.args.get('revision_only') == '1':
+            response = jsonify(revision=revision)
+            response.headers['Cache-Control'] = 'no-store'
+            return response
+        name = request.args.get('name')
+        if name is not None:
+            if name not in data:
+                return jsonify(error='女优记录不存在'), 404
+            return jsonify(name=name, aliases=data[name], revision=revision)
+        query = request.args.get('q', '').strip().casefold()
+        matches = [dict(name=n, aliases=a) for n, a in data.items()
+                   if not query or query in n.casefold() or any(query in v.casefold() for v in a)]
+        response = jsonify(records=matches[:100], total=len(matches), revision=revision)
+        response.headers['Cache-Control'] = 'no-store'
+        return response
+    except AliasConflict as exc:
+        return jsonify(error=str(exc)), 409
+    except (ValueError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+    except OSError:
+        logging.exception('别名库读写失败')
+        return jsonify(error='别名库读写失败，请检查文件权限'), 500
+
+
+@app.route('/api/actress-aliases/query', methods=['POST'])
+def actress_alias_query_api():
+    body = request.get_json(silent=True) or {}
+    dvdid = body.get('dvdid')
+    if not isinstance(dvdid, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{1,79}', dvdid.strip()):
+        return jsonify(error='请填写有效番号（字母、数字、连字符或下划线）'), 400
+    try:
+        sources = query_actress_sources(dvdid.strip().upper())
+        data, revision = read_alias_document(ACTRESS_ALIAS_FILE)
+        result = analyze_actress_sources(sources, data)
+        return jsonify(**result, revision=revision), 200 if result['success'] else 422
+    except subprocess.TimeoutExpired:
+        return jsonify(error='查询超时（180 秒），请检查网络或减少启用的爬虫'), 504
+    except (ValueError, OSError) as exc:
+        return jsonify(error=str(exc)), 500
 
 
 # --- 6. 主程序入口 ---

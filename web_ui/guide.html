@@ -473,6 +473,15 @@ curl -X POST http://localhost:5000/api/trigger-scrape \
 <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/metadata/normalize_actress</code></td><td>女优名归一化<br><small>参数: <code>path</code>(string,必填) — 目标目录; <code>move</code>(bool,可选) — 是否移动文件</small></td></tr>
 </table>
 
+<h3>女优数据管理</h3>
+<p>一级分页“女优数据管理”提供番号查询、手动维护及历史女优名归一化。手动维护默认不展示词库，输入名字并点击搜索后才显示匹配记录。候选名字可点击勾选或排除；只有点击“确认保存”才会修改 <code>data/actress_alias.json</code>。任一来源返回多位演员时查询失败。查询取消勾选不删除已有别名，删除请使用手动维护。</p>
+<table>
+<tr><th>方法</th><th>路径</th><th>说明</th></tr>
+<tr><td>GET</td><td><code>/api/actress-aliases?q=名字</code></td><td>按统一名字或别名搜索（最多显示100条）；name 参数读取指定记录，均返回 revision；revision_only=1 仅获取版本</td></tr>
+<tr><td>POST</td><td><code>/api/actress-aliases/query</code></td><td>只读查询；参数 dvdid；返回各站点原始名字及候选，不修改词库</td></tr>
+<tr><td>POST</td><td><code>/api/actress-aliases</code></td><td>人工确认保存：name、aliases、revision、confirmed:true；编辑已有记录传 original_name；mode 为 append（保留已有别名）或 edit（按选择替换）；冲突返回409</td></tr>
+</table>
+
 <h2 id="api-config">⚙️ 配置 API</h2>
 <table>
 <tr><th>方法</th><th>路径</th><th>说明</th></tr>

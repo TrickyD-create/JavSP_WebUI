@@ -5,13 +5,14 @@ import logging
 from javsp.web.base import get_html
 from javsp.web.exceptions import *
 from javsp.datatype import MovieInfo
+from javsp.lib import contains_exact_movie_id
 
 
 logger = logging.getLogger(__name__)
 base_url = 'https://jav.guru'
 
 
-def search_movie(dvdid):
+def search_movie(dvdid, *, strict=False):
     html = get_html(f'{base_url}/?s={dvdid}')
     dvdid_lower = dvdid.lower()
     all_links = html.xpath("//a[contains(@href, '/')]/@href")
@@ -21,7 +22,8 @@ def search_movie(dvdid):
                          '/category/', '/page/', '/author/']
         if any(p in link for p in skip_patterns):
             continue
-        if dvdid_lower in link.lower():
+        if (contains_exact_movie_id(link, dvdid) if strict
+            else (dvdid_lower in link.lower())):
             if link.startswith('/'):
                 link = f'{base_url}{link}'
             return link
@@ -29,7 +31,8 @@ def search_movie(dvdid):
 
 
 def parse_data(movie: MovieInfo):
-    detail_url = search_movie(movie.dvdid)
+    detail_url = (search_movie(movie.dvdid, strict=True) if getattr(movie, "_strict_dvdid_match", False)
+                  else search_movie(movie.dvdid))
     html = get_html(detail_url)
 
     title_tag = html.xpath("//title/text()")

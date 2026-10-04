@@ -8,6 +8,7 @@ from javsp.web.exceptions import *
 from javsp.func import *
 from javsp.config import Cfg
 from javsp.datatype import MovieInfo
+from javsp.lib import contains_exact_movie_id
 
 
 logger = logging.getLogger(__name__)
@@ -17,19 +18,21 @@ request = Request(use_scraper=True)
 request.headers['Accept-Language'] = 'zh-CN,zh;q=0.9,en;q=0.8'
 
 
-def search_movie(dvdid):
+def search_movie(dvdid, *, strict=False):
     html = get_html(f'{base_url}/?s={dvdid}')
     links = html.xpath("//article[contains(@class,'post')]//h2/a")
     for link in links:
         href = link.get('href', '')
         title = link.text_content().strip()
-        if dvdid.lower() in title.lower() or dvdid.lower() in href.lower():
+        if (contains_exact_movie_id(title + " " + (href or ""), dvdid) if strict
+            else (dvdid.lower() in title.lower() or dvdid.lower() in href.lower())):
             return href
     raise MovieNotFoundError(__name__, dvdid)
 
 
 def parse_data(movie: MovieInfo):
-    detail_url = search_movie(movie.dvdid)
+    detail_url = (search_movie(movie.dvdid, strict=True) if getattr(movie, "_strict_dvdid_match", False)
+                  else search_movie(movie.dvdid))
     html = get_html(detail_url)
 
     title_tag = html.xpath("//meta[@property='og:title']/@content")

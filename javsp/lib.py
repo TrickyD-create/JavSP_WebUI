@@ -72,3 +72,10 @@ def detect_special_attr(filepath: str, avid: str = None) -> str:
 
 if __name__ == "__main__":
     print(detect_special_attr('ipx-177cd1.mp4', 'IPX-177'))
+
+
+def contains_exact_movie_id(text: str, dvdid: str) -> bool:
+    """查询别名时避免 ABC-123 误匹配 ABC-1234；允许常见番号分隔符。"""
+    parts = re.split(r"[-_\s]+", dvdid.strip())
+    pattern = r"(?<![A-Za-z0-9])" + r"[-_\s]*".join(re.escape(p) for p in parts) + r"(?![A-Za-z0-9])"
+    return bool(re.search(pattern, text or "", re.I))

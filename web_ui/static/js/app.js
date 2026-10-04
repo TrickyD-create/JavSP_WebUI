@@ -5,7 +5,11 @@
             if (activeBtn) activeBtn.classList.add('active');
             document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
             document.getElementById(tabName + 'Panel').classList.add('active');
-            if (tabName === 'crawlers') {
+            if (tabName === 'actress') {
+                const pathInput = document.getElementById('actressNormalizePath');
+                if (!pathInput.value) pathInput.value = localStorage.getItem('legacyImportPath') || '';
+                loadTaskCenter();
+            } else if (tabName === 'crawlers') {
                 loadCrawlerConfig();
             } else if (tabName === 'debug') {
                 loadDebugCrawlers();
@@ -1929,9 +1933,9 @@
         }
 
         async function normalizeActressMetadata() {
-            const input = document.getElementById('legacyImportPath');
+            const input = document.getElementById('actressNormalizePath');
             const path = input ? input.value : '';
-            if (!path || !path.trim()) return;
+            if (!path || !path.trim()) { showToast('请填写归一化目录路径', 'error'); return; }
             localStorage.setItem('legacyImportPath', path.trim());
             const move = !!document.getElementById('normalizeActressMove')?.checked;
             _taskCenterState.normalizeActressStartedAt = Date.now() / 1000 - 2;

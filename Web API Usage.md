@@ -8,6 +8,7 @@ JavSP Web UI 提供以下 RESTful API 端点。所有返回 JSON 的端点（除
 - [任务管理](#任务管理)
 - [运行记录](#运行记录)
 - [元数据管理](#元数据管理)
+- [女优数据管理](#女优数据管理)
 - [配置管理](#配置管理)
 - [爬虫管理](#爬虫管理)
 - [封面与详情](#封面与详情)
@@ -390,6 +391,56 @@ POST /api/metadata/normalize_actress
 ```
 
 保存配置，如果 `metadata_complete` 段落有变化会自动批量重判。
+
+---
+
+## 女优数据管理
+
+查询及读取均不修改词库；只有带明确确认的保存请求会更新 `data/actress_alias.json`。
+
+### GET /api/actress-aliases — 搜索或读取记录
+
+| 查询参数 | 说明 |
+| --- | --- |
+| `q` | 按统一名字或别名包含匹配，返回 `records`、`total`、`revision`，最多100条；省略时 API 返回前100条，页面不会自动调用全量列表 |
+| `name` | 精确读取统一名字记录，返回 `name`、`aliases`、`revision`；不存在返回404 |
+| `revision_only=1` | 仅返回词库版本 `revision`，供新增草稿使用 |
+
+`revision` 是当前词库的版本摘要，保存时须原样提交。
+
+### POST /api/actress-aliases/query — 番号只读查询
+
+```json
+{"dvdid": "ABC-123"}
+```
+
+成功返回 `success:true`、`sources`（来源、原始名字及失败原因）、`candidates`（名字及来源）、建议的 `name`、命中记录的 `original_name`、`existing_aliases` 和 `revision`。普通番号使用 normal 爬虫配置，FC2 使用 fc2 配置。单演员候选仍需人工核对。
+
+任一来源返回多位演员、无有效名字或命中不同女优条目时返回422，包含 `success:false`、`error` 和来源结果。无效番号返回400，180秒超时返回504，子进程或文件读取失败返回500。查询不会写入词库。
+
+### POST /api/actress-aliases — 人工确认保存
+
+```json
+{
+  "name": "统一名字",
+  "original_name": "原统一名字",
+  "aliases": ["别名一", "别名二"],
+  "mode": "append",
+  "revision": "读取或查询返回的版本摘要",
+  "confirmed": true
+}
+```
+
+| 参数 | 说明 |
+| --- | --- |
+| `name` | 最终统一名字，必填 |
+| `original_name` | 编辑已有记录时填写原统一名字；新增时省略或设为 null |
+| `aliases` | 本次选中的别名列表，必填；自动去除首尾空格、空项及重复名字 |
+| `mode` | `append`（默认）追加并保留已有别名；`edit` 按本次列表更新，可删除已有别名 |
+| `revision` | 草稿对应的词库版本，必填 |
+| `confirmed` | 必须为 JSON 布尔值 true；页面仅在用户点击“确认保存”后提交 |
+
+改名时原统一名字自动保留为别名；名字已归属其他记录时拒绝保存。成功返回 `success`、`message`、`changes`、新 `revision` 及 `backup` 文件名；无实际变更时 backup 为 null。未确认或参数错误返回400，名字归属或版本冲突返回409，文件读写错误返回500。保存不会自动更新历史影片，历史处理继续使用 `/api/metadata/normalize_actress`。
 
 ---
 

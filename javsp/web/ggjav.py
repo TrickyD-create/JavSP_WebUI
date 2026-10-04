@@ -7,6 +7,7 @@ from javsp.web.base import Request, get_html
 from javsp.web.exceptions import *
 from javsp.config import Cfg
 from javsp.datatype import MovieInfo
+from javsp.lib import contains_exact_movie_id
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ request = Request(use_scraper=True)
 request.headers['Accept-Language'] = 'zh-CN,zh;q=0.9,en;q=0.8'
 
 
-def search_movie(dvdid):
+def search_movie(dvdid, *, strict=False):
     """在GGJAV上搜索影片，返回匹配的详情页URL"""
     html = get_html(f'{base_url}/main/search?string={dvdid}')
     items = html.xpath("//div[contains(@class,'item') and not(contains(@class,'native_ads'))]")
@@ -29,15 +30,17 @@ def search_movie(dvdid):
         title_el = item.xpath(".//div[contains(@class,'item_title')]/a/text()")
         title = title_el[0].strip() if title_el else ''
         candidates.append((href, title))
-        if dvdid.upper() in title.upper() or dvdid.upper() in href.upper():
+        if (contains_exact_movie_id(title + " " + (href or ""), dvdid) if strict
+            else (dvdid.upper() in title.upper() or dvdid.upper() in href.upper())):
             return href
-    if len(candidates) == 1:
+    if not strict and len(candidates) == 1:
         return candidates[0][0]
     raise MovieNotFoundError(__name__, dvdid)
 
 
 def parse_data(movie: MovieInfo):
-    detail_url = search_movie(movie.dvdid)
+    detail_url = (search_movie(movie.dvdid, strict=True) if getattr(movie, "_strict_dvdid_match", False)
+                  else search_movie(movie.dvdid))
     html = get_html(detail_url)
     movie.url = detail_url
 
